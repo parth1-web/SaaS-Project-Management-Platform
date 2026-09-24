@@ -159,9 +159,49 @@ html, body {
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--sm-primary-soft); color: var(--sm-primary);
 }
+.sm-kpi-blue .sm-kpi-icon { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; }
+.sm-kpi-sky .sm-kpi-icon { background: linear-gradient(135deg, #0ea5e9, #2563eb); color: #fff; }
+.sm-kpi-green .sm-kpi-icon { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+.sm-kpi-amber .sm-kpi-icon { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+.sm-kpi-hover { transition: box-shadow 0.15s ease, transform 0.15s ease; }
+.sm-kpi-hover:hover { transform: translateY(-2px); box-shadow: var(--sm-shadow-hover); }
 .sm-kpi-value { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
 .sm-kpi-label { font-size: 13px; color: var(--sm-text-2); }
 .sm-kpi-sub { font-size: 12px; color: var(--sm-text-3); }
+
+/* ---------- Dashboard workspace ---------- */
+.sm-dash-hero {
+  background: linear-gradient(120deg, #1e40af 0%, #2563eb 55%, #0ea5e9 110%);
+  border: 1px solid #1e40af;
+  border-radius: var(--sm-radius);
+  box-shadow: var(--sm-shadow-hover);
+  color: #fff;
+}
+[data-bs-theme="dark"] .sm-dash-hero {
+  background: linear-gradient(120deg, #0b2560 0%, #123a8f 55%, #1d4ed8 115%);
+  border-color: #2c4f89;
+}
+.sm-dash-hero .btn-light { font-weight: 600; }
+.sm-card-head {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 8px; margin-bottom: 4px;
+}
+.sm-due-pill {
+  display: inline-block; font-size: 12px; font-weight: 600;
+  padding: 2px 9px; border-radius: 999px; white-space: nowrap;
+  border: 1px solid transparent;
+}
+.sm-due-over { background: rgba(220, 53, 69, 0.12); color: #dc3545; border-color: rgba(220, 53, 69, 0.3); }
+.sm-due-today { background: rgba(245, 158, 11, 0.16); color: #b45309; border-color: rgba(245, 158, 11, 0.35); }
+.sm-due-soon { background: var(--sm-primary-soft); color: var(--sm-primary); border-color: var(--sm-primary-border); }
+.sm-due-ok { background: var(--sm-surface-2); color: var(--sm-text-2); border-color: var(--sm-border); }
+.sm-due-none { background: transparent; color: var(--sm-text-3); border-color: var(--sm-border); }
+[data-bs-theme="dark"] .sm-due-today { color: #fbbf24; }
+[data-bs-theme="dark"] .sm-due-over { color: #f87171; }
+/* Recharts polish for both modes */
+.recharts-wrapper :focus { outline: none; }
+.recharts-cartesian-axis-tick text { font-family: var(--sm-font); }
+.recharts-default-tooltip { box-shadow: var(--sm-shadow-hover) !important; }
 
 /* ---------- Sidebar nav ---------- */
 .sm-nav-link {
