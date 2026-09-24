@@ -86,9 +86,9 @@ export default function ProjectDetails() {
             <Button size="sm" variant="light" className="border" aria-label="More actions">
               <EllipsisVertical size={14} aria-hidden />
             </Button>
-            <Button size="sm" as={Link as never} to={`/projects/${id}/tasks`} href={`/projects/${id}/tasks`}>
+            <Link to={`/projects/${id}/tasks`} className="btn btn-primary btn-sm">
               Open Board
-            </Button>
+            </Link>
           </>
         }
       />
@@ -178,9 +178,9 @@ export default function ProjectDetails() {
                 </div>
               ))}
               {tasks.length === 0 && <div className="text-muted small">No tasks yet.</div>}
-              <Button size="sm" className="mt-2" as={Link as never} href={`/projects/${id}/tasks`} to={`/projects/${id}/tasks`}>
+              <Link to={`/projects/${id}/tasks`} className="btn btn-primary btn-sm mt-2">
                 Open full board
-              </Button>
+              </Link>
             </Card.Body>
           </Card>
         </Tab>

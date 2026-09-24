@@ -138,7 +138,7 @@ export default function OrganizationDetails() {
                         </td>
                         <td className="small text-muted">{m.email}</td>
                         <td>
-                          <Form.Select size="sm" value={m.role} style={{ maxWidth: 130 }} aria-label={`Role for ${m.fullName}`} onChange={(e) => roleMut.mutate({ userId: m.userId, newRole: e.target.value })}>
+                          <Form.Select size="sm" value={m.role} style={{ maxWidth: 130 }} aria-label={`Role for ${m.fullName}`} onChange={(e) => roleMut.mutate({ userId: m.userId, role: e.target.value })}>
                             <option>Owner</option><option>Admin</option><option>Manager</option><option>Member</option>
                           </Form.Select>
                         </td>
