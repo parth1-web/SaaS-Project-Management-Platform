@@ -249,6 +249,38 @@ html, body {
 .sm-auth-card { width: 100%; max-width: 440px; border-top: 4px solid var(--sm-primary); }
 @media (max-width: 425px) { .sm-auth-wrap { padding: 14px; } }
 
+/* Split-screen auth */
+.sm-auth-split {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  background: var(--sm-bg);
+}
+.sm-auth-brand {
+  background: linear-gradient(160deg, #1e40af 0%, #1d4ed8 45%, #2563eb 75%, #0ea5e9 100%);
+  color: #fff;
+  min-height: 100vh;
+  position: sticky;
+  top: 0;
+}
+.sm-auth-logo {
+  width: 34px; height: 34px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.sm-auth-form-side {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 28px; max-width: 560px; width: 100%; margin: 0 auto;
+}
+.sm-auth-form-card { border-top: 4px solid var(--sm-primary); }
+@media (max-width: 900px) {
+  .sm-auth-split { grid-template-columns: 1fr; }
+  .sm-auth-brand { min-height: auto; }
+  .sm-auth-form-side { padding: 20px 14px 32px; }
+}
+
 /* Focus visibility */
 :focus-visible { outline: 2px solid var(--sm-primary); outline-offset: 2px; }
 
