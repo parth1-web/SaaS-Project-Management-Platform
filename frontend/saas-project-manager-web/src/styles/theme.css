@@ -179,3 +179,20 @@ html, body {
 
 /* Focus visibility */
 :focus-visible { outline: 2px solid var(--sm-primary); outline-offset: 2px; }
+
+/* Skip link */
+.sm-skip-link {
+  position: absolute; left: 12px; top: -48px; z-index: 2000;
+  background: var(--sm-primary); color: #fff;
+  padding: 8px 14px; border-radius: 8px; text-decoration: none;
+  transition: top 0.15s ease;
+}
+.sm-skip-link:focus { top: 12px; color: #fff; }
+
+/* Text truncation helper */
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
