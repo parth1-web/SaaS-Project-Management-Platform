@@ -110,7 +110,36 @@ html, body {
   .sm-kpi-value { font-size: 20px; }
 }
 
-/* ---------- Typography ---------- */
+/* ---------- Workspace (bluish) ---------- */
+.sm-content {
+  background:
+    radial-gradient(600px 200px at 10% 0%, rgba(37, 99, 235, 0.08), transparent 60%),
+    radial-gradient(600px 200px at 90% 0%, rgba(14, 165, 233, 0.08), transparent 60%);
+  border-radius: 16px;
+}
+.sm-content .sm-card {
+  border: 1px solid var(--sm-border);
+  border-top: 2px solid rgba(37, 99, 235, 0.35);
+}
+.sm-content .sm-kpi .sm-kpi-icon {
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  color: #fff;
+}
+.sm-workspace-hero {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 55%, #0ea5e9 100%);
+  color: #fff;
+  border: 1px solid #1e40af;
+  border-radius: var(--sm-radius);
+  box-shadow: var(--sm-shadow-hover);
+}
+.sm-workspace-hero .sm-page-sub, .sm-workspace-hero .text-muted { color: #dbeafe !important; }
+.sm-card-blue {
+  border-top: 3px solid var(--sm-primary);
+}
+.sm-kpi-blue .sm-kpi-icon {
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  color: #fff;
+}
 .sm-page-title { font-size: 29px; font-weight: 700; letter-spacing: -0.02em; margin: 0; color: var(--sm-text); }
 .sm-page-sub { color: var(--sm-text-2); font-size: 14px; margin-top: 4px; }
 .sm-section-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sm-text-3); }

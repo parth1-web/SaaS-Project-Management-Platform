@@ -118,6 +118,9 @@ builder.Services.AddRateLimiter(o =>
 
 var app = builder.Build();
 
+// Development: ensure schema exists and seed demo workspace (idempotent).
+await SaaSProjectManager.Infrastructure.Persistence.DevDataSeeder.MigrateAndSeedAsync(app.Services);
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
