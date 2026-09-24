@@ -34,34 +34,46 @@ const registerSchema = z.object({
 
 function BrandPanel() {
   return (
-    <div className="sm-auth-brand p-4 p-lg-5 d-flex flex-column">
-      <span className="d-inline-flex align-items-center gap-2 fw-bold text-white mb-4">
-        <span className="sm-auth-logo" aria-hidden>
+    <div className="sm-auth-brand sm-auth-animated p-4 p-lg-5 d-flex flex-column overflow-hidden position-relative">
+      <span className="sm-orb sm-orb-1" aria-hidden />
+      <span className="sm-orb sm-orb-2" aria-hidden />
+      <span className="d-inline-flex align-items-center gap-2 fw-bold text-white mb-4 position-relative">
+        <span className="sm-auth-logo sm-logo-pulse" aria-hidden>
           <Layers size={18} />
         </span>
         SaaS Manager
       </span>
-      <h2 className="text-white fw-bold mb-2" style={{ letterSpacing: '-0.02em' }}>
+      <h2 className="text-white fw-bold mb-2 sm-fade-up" style={{ letterSpacing: '-0.02em', animationDelay: '0.05s' }}>
         Ship projects faster, together.
       </h2>
-      <p className="mb-4" style={{ color: '#cfe1fb' }}>
+      <p className="mb-4 sm-fade-up" style={{ color: '#cfe1fb', animationDelay: '0.12s' }}>
         Organizations, Kanban boards, realtime updates and activity timelines — one calm blue workspace.
       </p>
-      <ul className="list-unstyled d-flex flex-column gap-3 mb-4">
-        <li className="d-flex gap-2 align-items-start">
+      <ul className="list-unstyled d-flex flex-column gap-3 mb-4 position-relative">
+        <li className="d-flex gap-2 align-items-start sm-fade-up" style={{ animationDelay: '0.18s' }}>
           <FolderKanban size={17} className="mt-1 flex-shrink-0" aria-hidden />
           <span><strong>Projects & boards</strong><br /><span style={{ color: '#cfe1fb' }}>Grid or list, progress bars, deadlines.</span></span>
         </li>
-        <li className="d-flex gap-2 align-items-start">
+        <li className="d-flex gap-2 align-items-start sm-fade-up" style={{ animationDelay: '0.26s' }}>
           <KanbanSquare size={17} className="mt-1 flex-shrink-0" aria-hidden />
           <span><strong>Kanban that stays live</strong><br /><span style={{ color: '#cfe1fb' }}>SignalR status moves, no refresh needed.</span></span>
         </li>
-        <li className="d-flex gap-2 align-items-start">
+        <li className="d-flex gap-2 align-items-start sm-fade-up" style={{ animationDelay: '0.34s' }}>
           <Bell size={17} className="mt-1 flex-shrink-0" aria-hidden />
           <span><strong>Never miss a beat</strong><br /><span style={{ color: '#cfe1fb' }}>Assignments, comments and due-date nudges.</span></span>
         </li>
       </ul>
-      <div className="d-flex gap-4 mt-auto pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+      <div className="sm-preview-card sm-fade-up position-relative" style={{ animationDelay: '0.42s' }} aria-hidden>
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <strong className="small">Website Redesign</strong>
+          <span className="sm-live-dot"><span />Live</span>
+        </div>
+        <div className="sm-preview-row"><span>Design homepage hero</span><em className="sm-pill">High</em></div>
+        <div className="sm-preview-row"><span>Migrate to new theme</span><em className="sm-pill">Urgent</em></div>
+        <div className="sm-preview-bar"><i /></div>
+        <div className="small mt-1" style={{ color: '#cfe1fb' }}>72% complete · 3 teammates online</div>
+      </div>
+      <div className="d-flex gap-4 mt-auto pt-3 position-relative" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
         <span><strong className="text-white">2</strong> <span style={{ color: '#cfe1fb' }}>demo orgs</span></span>
         <span><strong className="text-white">3</strong> <span style={{ color: '#cfe1fb' }}>projects</span></span>
         <span><strong className="text-white">12</strong> <span style={{ color: '#cfe1fb' }}>tasks</span></span>
@@ -99,7 +111,7 @@ function AuthShell({
             <span className="text-capitalize">{mode}</span>
           </Button>
         </div>
-        <Card className="sm-card sm-auth-form-card p-4">
+        <Card className="sm-card sm-auth-form-card sm-form-enter p-4">
           <h1 className="sm-page-title" style={{ fontSize: 26 }}>{title}</h1>
           <p className="sm-page-sub mb-3">{subtitle}</p>
           {children}
