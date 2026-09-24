@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button, Col, Form, Modal, Row } from 'react-bootstrap';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Pager from '../components/ui/Pagination';
 import { Building2, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -23,9 +24,10 @@ export default function Organizations() {
   const { push } = useToastStore();
   const { setSelectedOrgId } = useOrgStore();
   const [show, setShow] = useState(false);
+  const [page, setPage] = useState(1);
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['orgs'],
-    queryFn: () => organizationApi.list(1, 50),
+    queryKey: ['orgs', page],
+    queryFn: () => organizationApi.list(page, 12),
   });
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<z.infer<typeof schema>>({
@@ -77,7 +79,7 @@ export default function Organizations() {
                   <RoleBadge role={o.userRole} />
                 </div>
                 <div className="fw-bold" style={{ fontSize: 16 }}>
-                  <Link to={`/organizations/${o.id}`} className="text-decoration-none text-dark stretched-link" onClick={() => setSelectedOrgId(o.id)}>
+                  <Link to={`/organizations/${o.id}`} className="text-decoration-none stretched-link" style={{ color: 'var(--sm-text)' }} onClick={() => setSelectedOrgId(o.id)}>
                     {o.name}
                   </Link>
                 </div>
@@ -90,6 +92,10 @@ export default function Organizations() {
           ))}
         </Row>
       )}
+
+      <div className="d-flex justify-content-center mt-3">
+        <Pager page={page} totalPages={data?.totalPages ?? 1} onChange={setPage} />
+      </div>
 
       <Modal show={show} onHide={() => setShow(false)} centered aria-label="Create organization">
         <Modal.Header closeButton>
