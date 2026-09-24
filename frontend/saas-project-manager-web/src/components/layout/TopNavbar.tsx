@@ -50,7 +50,7 @@ export default function TopNavbar({ onMenu }: { onMenu: () => void }) {
         <Menu size={16} aria-hidden />
       </Button>
       <nav className="small text-muted d-none d-md-block" aria-label="Breadcrumb">
-        Workspace <span aria-hidden>/</span> <span className="text-dark fw-semibold">{crumb(location.pathname)}</span>
+        Workspace <span aria-hidden>/</span> <span className="fw-semibold" style={{ color: 'var(--sm-text)' }}>{crumb(location.pathname)}</span>
       </nav>
       <div className="d-none d-md-flex flex-grow-1 justify-content-center">
         <SearchBar />

@@ -14,6 +14,7 @@ import { CardSkeletonGrid, EmptyState, ErrorState } from '../components/ui/State
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import Pager from '../components/ui/Pagination';
 import { FolderKanban } from 'lucide-react';
 
 const schema = z.object({
@@ -34,11 +35,13 @@ export default function Projects() {
   const [statusFilter, setStatusFilter] = useState('');
   const [sort, setSort] = useState<'newest' | 'name' | 'progress'>('newest');
   const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
 
   const { data: orgs } = useQuery({ queryKey: ['orgs'], queryFn: () => organizationApi.list(1, 50) });
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['projects', selectedOrgId],
-    queryFn: () => projectApi.list(selectedOrgId ?? undefined, 1, 100),
+    queryKey: ['projects', selectedOrgId, page],
+    queryFn: () => projectApi.list(selectedOrgId ?? undefined, page, pageSize),
   });
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
@@ -175,6 +178,10 @@ export default function Projects() {
           ))}
         </div>
       )}
+
+      <div className="d-flex justify-content-center mt-3">
+        <Pager page={page} totalPages={data?.totalPages ?? 1} onChange={setPage} />
+      </div>
 
       <Modal show={show} onHide={() => setShow(false)} centered>
         <Modal.Header closeButton>

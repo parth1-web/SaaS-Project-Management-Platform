@@ -23,7 +23,7 @@ export default function ProjectCard({ project }: { project: Project }) {
           <span className="text-muted small">{project.organizationName}</span>
         </div>
         <Card.Title style={{ fontSize: 17 }} className="mb-1">
-          <Link to={`/projects/${project.id}`} className="text-decoration-none text-dark stretched-link">
+          <Link to={`/projects/${project.id}`} className="text-decoration-none stretched-link" style={{ color: 'var(--sm-text)' }}>
             {project.name}
           </Link>
         </Card.Title>
