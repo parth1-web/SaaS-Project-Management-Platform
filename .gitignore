@@ -13,12 +13,12 @@ dist/
 dist-ssr/
 *.local
 
-# Env / secrets
+# Env / secrets (never commit real credentials)
 .env
 .env.*.local
+appsettings.json
 appsettings.*.json
-!**/appsettings.json
-!**/appsettings.Development.json
+!**/appsettings.Example.json
 
 # OS
 .DS_Store

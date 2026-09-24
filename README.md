@@ -37,7 +37,11 @@ SaaSProjectManager/
 
 ### Backend
 ```powershell
-# PostgreSQL connection in src/SaaSProjectManager.API/appsettings.Development.json
+# 1. Create your private local settings (git-ignored, never committed):
+#    copy src/SaaSProjectManager.API/appsettings.Example.json
+#      -> src/SaaSProjectManager.API/appsettings.json
+#      -> src/SaaSProjectManager.API/appsettings.Development.json
+#    then set your Postgres password + a Jwt Secret (min 32 chars).
 dotnet restore SaaSProjectManager.sln
 dotnet build SaaSProjectManager.sln
 dotnet test SaaSProjectManager.sln
