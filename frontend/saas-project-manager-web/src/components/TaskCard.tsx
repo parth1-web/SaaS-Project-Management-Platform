@@ -1,9 +1,9 @@
 import { Badge } from 'react-bootstrap';
 import { CalendarDays, MessageSquare, Paperclip } from 'lucide-react';
-import type { TaskItem } from '../../types';
-import { TaskPriorityLabels } from '../../types';
-import { PriorityBadge } from '../ui/Badges';
-import { Avatar } from '../ui/Avatar';
+import type { TaskItem } from '../types';
+import { TaskPriorityLabels } from '../types';
+import { PriorityBadge } from './ui/Badges';
+import { Avatar } from './ui/Avatar';
 
 function dueLabel(due?: string): { text: string; urgent: boolean } {
   if (!due) return { text: 'No due date', urgent: false };

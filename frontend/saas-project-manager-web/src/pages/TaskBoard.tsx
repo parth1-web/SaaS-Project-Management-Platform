@@ -5,6 +5,7 @@ import { Plus, Search } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { taskApi } from '../api/taskApi';
 import { projectApi } from '../api/projectApi';
+import type { TaskItem } from '../types';
 import TaskCard from '../components/TaskCard';
 import TaskDetailOffcanvas from '../components/tasks/TaskDetailOffcanvas';
 import TaskFormModal, { type TaskFormValues } from '../components/tasks/TaskFormModal';
@@ -83,7 +84,7 @@ export default function TaskBoard() {
   });
 
   const grouped = useMemo(() => {
-    const map = new Map<number, typeof (data?.items ?? [])>();
+    const map = new Map<number, TaskItem[]>();
     for (const c of columns) map.set(c.status, []);
     for (const t of data?.items ?? []) map.get(t.status)?.push(t);
     return map;
