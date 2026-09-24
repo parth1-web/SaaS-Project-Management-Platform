@@ -5,7 +5,7 @@ import type { Project } from '../../types';
 import { ProjectStatusBadge } from '../ui/Badges';
 
 function accentFor(id: string): string {
-  const palette = ['#4f46e5', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+  const palette = ['#2563eb', '#0ea5e9', '#1d4ed8', '#38bdf8', '#1e40af', '#60a5fa'];
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % palette.length;
   return palette[h];

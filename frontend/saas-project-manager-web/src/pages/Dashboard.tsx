@@ -25,7 +25,7 @@ import ActivityTimeline from '../components/ui/ActivityTimeline';
 import { PriorityBadge, StatusBadge } from '../components/ui/Badges';
 import { organizationApi } from '../api/organizationApi';
 
-const COLORS = ['#4f46e5', '#0ea5e9', '#f59e0b', '#10b981'];
+const COLORS = ['#2563eb', '#0ea5e9', '#38bdf8', '#1e40af'];
 
 function greeting(): string {
   const h = new Date().getHours();
