@@ -1,0 +1,6 @@
+@SaaSProjectManager.API_HostAddress = http://localhost:5227
+
+GET {{SaaSProjectManager.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

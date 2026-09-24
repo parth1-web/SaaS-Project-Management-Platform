@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SaaSProjectManager.API/SaaSProjectManager.API.csproj" />
+    <Project Path="src/SaaSProjectManager.Application/SaaSProjectManager.Application.csproj" />
+    <Project Path="src/SaaSProjectManager.Domain/SaaSProjectManager.Domain.csproj" />
+    <Project Path="src/SaaSProjectManager.Infrastructure/SaaSProjectManager.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SaaSProjectManager.IntegrationTests/SaaSProjectManager.IntegrationTests.csproj" />
+    <Project Path="tests/SaaSProjectManager.UnitTests/SaaSProjectManager.UnitTests.csproj" />
+  </Folder>
+</Solution>
