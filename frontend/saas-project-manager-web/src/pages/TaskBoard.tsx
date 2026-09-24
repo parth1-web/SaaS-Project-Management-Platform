@@ -1,43 +1,52 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Row, Col, Button, Modal, Form } from 'react-bootstrap';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { Button, Form, InputGroup } from 'react-bootstrap';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus, Search } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import { taskApi } from '../api/taskApi';
+import { projectApi } from '../api/projectApi';
 import TaskCard from '../components/TaskCard';
-import { LoadingSpinner, ErrorAlert } from '../components/Feedback';
+import TaskDetailOffcanvas from '../components/tasks/TaskDetailOffcanvas';
+import TaskFormModal, { type TaskFormValues } from '../components/tasks/TaskFormModal';
+import PageHeader from '../components/ui/PageHeader';
+import FilterBar from '../components/ui/FilterBar';
+import { EmptyState, ErrorState, LoadingState } from '../components/ui/States';
+import { useToastStore } from '../store/toastStore';
 import { getProjectHub } from '../utils/signalr';
 
 const columns = [
-  { status: 0, title: 'TODO' },
-  { status: 1, title: 'IN PROGRESS' },
-  { status: 2, title: 'REVIEW' },
-  { status: 3, title: 'COMPLETED' },
+  { status: 0, title: 'Todo' },
+  { status: 1, title: 'In Progress' },
+  { status: 2, title: 'Review' },
+  { status: 3, title: 'Completed' },
 ];
 
 export default function TaskBoard() {
   const { id: projectId = '' } = useParams();
-  const navigate = useNavigate();
   const qc = useQueryClient();
-  const [show, setShow] = useState(false);
-  const [title, setTitle] = useState('');
-  const [desc, setDesc] = useState('');
-  const [priority, setPriority] = useState(1);
+  const { push } = useToastStore();
+  const [showCreate, setShowCreate] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
+  const [assignee, setAssignee] = useState('');
+  const [priority, setPriority] = useState('');
+
+  const projectQ = useQuery({ queryKey: ['project', projectId], queryFn: () => projectApi.get(projectId) });
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['tasks', projectId, search, statusFilter, priorityFilter],
-    queryFn: () => taskApi.list(projectId, {
-      search: search || undefined,
-      status: statusFilter || undefined,
-      priority: priorityFilter || undefined,
-      page: 1,
-      pageSize: 100,
-    }),
+    queryKey: ['tasks', projectId, search, assignee, priority],
+    queryFn: () =>
+      taskApi.list(projectId, {
+        search: search || undefined,
+        assignee: assignee || undefined,
+        priority: priority || undefined,
+        page: 1,
+        pageSize: 200,
+      }),
   });
 
   useEffect(() => {
+    if (!projectId) return;
     const hub = getProjectHub(projectId, {
       TaskCreated: () => qc.invalidateQueries({ queryKey: ['tasks', projectId] }),
       TaskUpdated: () => qc.invalidateQueries({ queryKey: ['tasks', projectId] }),
@@ -50,98 +59,133 @@ export default function TaskBoard() {
   }, [projectId, qc]);
 
   const createMut = useMutation({
-    mutationFn: () => taskApi.create(projectId, { title, description: desc, priority }),
+    mutationFn: (v: TaskFormValues) =>
+      taskApi.create(projectId, {
+        title: v.title,
+        description: v.description,
+        priority: v.priority,
+        dueDate: v.dueDate ? new Date(v.dueDate).toISOString() : undefined,
+        assignedTo: v.assignedTo || undefined,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks', projectId] });
-      setShow(false);
-      setTitle('');
-      setDesc('');
+      setShowCreate(false);
+      push('Task created successfully.');
     },
   });
 
   const moveMut = useMutation({
-    mutationFn: ({ taskId, status }: { taskId: string; status: number }) =>
-      taskApi.updateStatus(taskId, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks', projectId] }),
+    mutationFn: ({ taskId, status }: { taskId: string; status: number }) => taskApi.updateStatus(taskId, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks', projectId] });
+      push('Task updated successfully.');
+    },
   });
 
-  if (isLoading) return <LoadingSpinner text="Loading tasks..." />;
-  if (isError) return <ErrorAlert message="Failed to load tasks" onRetry={() => refetch()} />;
+  const grouped = useMemo(() => {
+    const map = new Map<number, typeof (data?.items ?? [])>();
+    for (const c of columns) map.set(c.status, []);
+    for (const t of data?.items ?? []) map.get(t.status)?.push(t);
+    return map;
+  }, [data]);
+
+  if (isLoading) return <LoadingState text="Loading board..." />;
+  if (isError) return <ErrorState message="We couldn't load tasks." onRetry={() => refetch()} />;
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h3>Task Board</h3>
-        <Button onClick={() => setShow(true)}>New Task</Button>
-      </div>
-      <div className="d-flex gap-2 mb-3 flex-wrap">
-        <Form.Control placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ maxWidth: 220 }} />
-        <Form.Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ maxWidth: 160 }}>
-          <option value="">All statuses</option>
-          <option value="Todo">Todo</option>
-          <option value="InProgress">InProgress</option>
-          <option value="Review">Review</option>
-          <option value="Completed">Completed</option>
-        </Form.Select>
-        <Form.Select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} style={{ maxWidth: 160 }}>
-          <option value="">All priorities</option>
+      <PageHeader
+        title={projectQ.data?.name ?? 'Task Board'}
+        subtitle={projectQ.data ? `${projectQ.data.organizationName} • ${data?.totalCount ?? 0} tasks` : undefined}
+        actions={
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus size={15} className="me-1" aria-hidden /> New Task
+          </Button>
+        }
+      />
+
+      <div className="d-flex gap-2 flex-wrap mb-2">
+        <InputGroup size="sm" style={{ maxWidth: 240 }}>
+          <InputGroup.Text aria-hidden>
+            <Search size={14} />
+          </InputGroup.Text>
+          <Form.Control placeholder="Search" aria-label="Search tasks" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </InputGroup>
+        <Form.Control
+          size="sm"
+          style={{ maxWidth: 180 }}
+          placeholder="Assignee user ID"
+          aria-label="Filter by assignee"
+          value={assignee}
+          onChange={(e) => setAssignee(e.target.value)}
+        />
+        <Form.Select size="sm" style={{ maxWidth: 150 }} value={priority} onChange={(e) => setPriority(e.target.value)} aria-label="Filter by priority">
+          <option value="">Priority: All</option>
           <option value="Low">Low</option>
           <option value="Medium">Medium</option>
           <option value="High">High</option>
           <option value="Urgent">Urgent</option>
         </Form.Select>
-        {(search || statusFilter || priorityFilter) && (
-          <Button variant="outline-secondary" onClick={() => { setSearch(''); setStatusFilter(''); setPriorityFilter(''); }}>
-            Clear
-          </Button>
-        )}
       </div>
-      <Row className="g-3">
-        {columns.map((col) => (
-          <Col key={col.status} md={6} lg={3}>
-            <div className="bg-light rounded p-2">
-              <div className="fw-bold mb-2">{col.title} ({data?.items.filter((t) => t.status === col.status).length ?? 0})</div>
-              {data?.items.filter((t) => t.status === col.status).map((t) => (
-                <div key={t.id}>
-                  <TaskCard task={t} onClick={() => navigate(`/tasks/${t.id}`)} />
+
+      <FilterBar
+        filters={[
+          ...(search ? [{ key: 'search', label: 'Search', value: search }] : []),
+          ...(assignee ? [{ key: 'assignee', label: 'Assignee', value: assignee }] : []),
+          ...(priority ? [{ key: 'priority', label: 'Priority', value: priority }] : []),
+        ]}
+        onRemove={(k) => {
+          if (k === 'search') setSearch('');
+          if (k === 'assignee') setAssignee('');
+          if (k === 'priority') setPriority('');
+        }}
+        onClear={() => {
+          setSearch('');
+          setAssignee('');
+          setPriority('');
+        }}
+      />
+
+      {(data?.items ?? []).length === 0 ? (
+        <EmptyState title="No tasks yet" hint="Create your first task to start tracking work." action={<Button onClick={() => setShowCreate(true)}>New Task</Button>} />
+      ) : (
+        <div className="sm-kanban-scroll" role="list" aria-label="Kanban board">
+          {columns.map((col) => (
+            <section key={col.status} className="sm-kanban-col" aria-label={`${col.title} column`}>
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <strong style={{ fontSize: 12, letterSpacing: '0.05em' }}>
+                  {col.title.toUpperCase()} ({grouped.get(col.status)?.length ?? 0})
+                </strong>
+              </div>
+              {(grouped.get(col.status) ?? []).map((t) => (
+                <div key={t.id} className="mb-1">
+                  <TaskCard task={t} onClick={() => setSelectedTaskId(t.id)} />
                   <div className="d-flex gap-1 mb-2">
                     {col.status > 0 && (
-                      <Button size="sm" variant="outline-secondary" onClick={() => moveMut.mutate({ taskId: t.id, status: col.status - 1 })}>←</Button>
+                      <Button size="sm" variant="light" className="border" onClick={() => moveMut.mutate({ taskId: t.id, status: col.status - 1 })} aria-label={`Move ${t.title} back`}>
+                        ←
+                      </Button>
                     )}
                     {col.status < 3 && (
-                      <Button size="sm" variant="outline-primary" onClick={() => moveMut.mutate({ taskId: t.id, status: col.status + 1 })}>→</Button>
+                      <Button size="sm" variant="light" className="border" onClick={() => moveMut.mutate({ taskId: t.id, status: col.status + 1 })} aria-label={`Move ${t.title} forward`}>
+                        →
+                      </Button>
                     )}
                   </div>
                 </div>
               ))}
-            </div>
-          </Col>
-        ))}
-      </Row>
-      <Modal show={show} onHide={() => setShow(false)}>
-        <Modal.Header closeButton><Modal.Title>New Task</Modal.Title></Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3"><Form.Label>Title</Form.Label><Form.Control value={title} onChange={(e) => setTitle(e.target.value)} /></Form.Group>
-            <Form.Group className="mb-3"><Form.Label>Description</Form.Label><Form.Control as="textarea" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} /></Form.Group>
-            <Form.Group>
-              <Form.Label>Priority</Form.Label>
-              <Form.Select value={priority} onChange={(e) => setPriority(Number(e.target.value))}>
-                <option value={0}>Low</option>
-                <option value={1}>Medium</option>
-                <option value={2}>High</option>
-                <option value={3}>Urgent</option>
-              </Form.Select>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
-          <Button disabled={!title.trim() || createMut.isPending} onClick={() => createMut.mutate()}>
-            {createMut.isPending ? 'Creating...' : 'Create'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+            </section>
+          ))}
+        </div>
+      )}
+
+      <TaskFormModal
+        show={showCreate}
+        busy={createMut.isPending}
+        onClose={() => setShowCreate(false)}
+        onSubmit={(v) => createMut.mutate(v)}
+      />
+      <TaskDetailOffcanvas taskId={selectedTaskId} show={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
     </>
   );
 }
