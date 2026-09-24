@@ -1,0 +1,31 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+uploads/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Env / secrets
+.env
+.env.*.local
+appsettings.*.json
+!**/appsettings.json
+!**/appsettings.Development.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# OneDrive lock files
+~$*
+
+# Misc
+*.log
