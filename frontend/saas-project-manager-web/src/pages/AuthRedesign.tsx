@@ -32,56 +32,6 @@ const registerSchema = z.object({
   password: z.string().min(6, 'Minimum 6 characters'),
 });
 
-function BrandPanel() {
-  return (
-    <div className="sm-auth-brand sm-auth-animated p-4 p-lg-5 d-flex flex-column overflow-hidden position-relative">
-      <span className="sm-orb sm-orb-1" aria-hidden />
-      <span className="sm-orb sm-orb-2" aria-hidden />
-      <span className="d-inline-flex align-items-center gap-2 fw-bold text-white mb-4 position-relative">
-        <span className="sm-auth-logo sm-logo-pulse" aria-hidden>
-          <Layers size={18} />
-        </span>
-        SaaS Manager
-      </span>
-      <h2 className="text-white fw-bold mb-2 sm-fade-up" style={{ letterSpacing: '-0.02em', animationDelay: '0.05s' }}>
-        Ship projects faster, together.
-      </h2>
-      <p className="mb-4 sm-fade-up" style={{ color: '#cfe1fb', animationDelay: '0.12s' }}>
-        Organizations, Kanban boards, realtime updates and activity timelines — one calm blue workspace.
-      </p>
-      <ul className="list-unstyled d-flex flex-column gap-3 mb-4 position-relative">
-        <li className="d-flex gap-2 align-items-start sm-fade-up" style={{ animationDelay: '0.18s' }}>
-          <FolderKanban size={17} className="mt-1 flex-shrink-0" aria-hidden />
-          <span><strong>Projects & boards</strong><br /><span style={{ color: '#cfe1fb' }}>Grid or list, progress bars, deadlines.</span></span>
-        </li>
-        <li className="d-flex gap-2 align-items-start sm-fade-up" style={{ animationDelay: '0.26s' }}>
-          <KanbanSquare size={17} className="mt-1 flex-shrink-0" aria-hidden />
-          <span><strong>Kanban that stays live</strong><br /><span style={{ color: '#cfe1fb' }}>SignalR status moves, no refresh needed.</span></span>
-        </li>
-        <li className="d-flex gap-2 align-items-start sm-fade-up" style={{ animationDelay: '0.34s' }}>
-          <Bell size={17} className="mt-1 flex-shrink-0" aria-hidden />
-          <span><strong>Never miss a beat</strong><br /><span style={{ color: '#cfe1fb' }}>Assignments, comments and due-date nudges.</span></span>
-        </li>
-      </ul>
-      <div className="sm-preview-card sm-fade-up position-relative" style={{ animationDelay: '0.42s' }} aria-hidden>
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <strong className="small">Website Redesign</strong>
-          <span className="sm-live-dot"><span />Live</span>
-        </div>
-        <div className="sm-preview-row"><span>Design homepage hero</span><em className="sm-pill">High</em></div>
-        <div className="sm-preview-row"><span>Migrate to new theme</span><em className="sm-pill">Urgent</em></div>
-        <div className="sm-preview-bar"><i /></div>
-        <div className="small mt-1" style={{ color: '#cfe1fb' }}>72% complete · 3 teammates online</div>
-      </div>
-      <div className="d-flex gap-4 mt-auto pt-3 position-relative" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
-        <span><strong className="text-white">2</strong> <span style={{ color: '#cfe1fb' }}>demo orgs</span></span>
-        <span><strong className="text-white">3</strong> <span style={{ color: '#cfe1fb' }}>projects</span></span>
-        <span><strong className="text-white">12</strong> <span style={{ color: '#cfe1fb' }}>tasks</span></span>
-      </div>
-    </div>
-  );
-}
-
 function AuthShell({
   title,
   subtitle,
@@ -96,31 +46,44 @@ function AuthShell({
   const { mode, setMode } = useThemeStore();
   const dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
   return (
-    <div className="sm-auth-split">
-      <BrandPanel />
-      <div className="sm-auth-form-side">
-        <div className="d-flex justify-content-end mb-2">
-          <Button
-            variant="light"
-            size="sm"
-            className="border"
-            onClick={() => setMode(dark ? 'light' : 'dark')}
-            aria-label="Toggle color theme"
-          >
-            {dark ? <Sun size={14} aria-hidden /> : <Moon size={14} aria-hidden />}{' '}
-            <span className="text-capitalize">{mode}</span>
-          </Button>
-        </div>
-        <Card className="sm-card sm-auth-form-card sm-form-enter p-4">
-          <h1 className="sm-page-title" style={{ fontSize: 26 }}>{title}</h1>
-          <p className="sm-page-sub mb-3">{subtitle}</p>
-          {children}
-          <div className="mt-3 text-center small">{footer}</div>
-        </Card>
-        <p className="text-center small mt-3 mb-0" style={{ color: 'var(--sm-text-3)' }}>
-          <Zap size={12} aria-hidden /> Protected by JWT + refresh rotation
-        </p>
+    <div className="sm-auth-stage">
+      <span className="sm-auth-bg-orb sm-auth-bg-orb-1" aria-hidden />
+      <span className="sm-auth-bg-orb sm-auth-bg-orb-2" aria-hidden />
+      <span className="sm-auth-bg-orb sm-auth-bg-orb-3" aria-hidden />
+      <div className="sm-auth-bg-grid" aria-hidden />
+      <div className="sm-auth-float-chip sm-auth-chip-1" aria-hidden>
+        <KanbanSquare size={14} /> Board live
       </div>
+      <div className="sm-auth-float-chip sm-auth-chip-2" aria-hidden>
+        <Bell size={14} /> 3 nudges
+      </div>
+      <div className="w-100 d-flex justify-content-between align-items-center mb-3 position-relative" style={{ maxWidth: 480 }}>
+        <span className="d-inline-flex align-items-center gap-2 fw-bold">
+          <span className="sm-auth-logo sm-logo-pulse" aria-hidden>
+            <Layers size={16} />
+          </span>
+          SaaS Manager
+        </span>
+        <Button variant="light" size="sm" className="border" onClick={() => setMode(dark ? 'light' : 'dark')} aria-label="Toggle color theme">
+          {dark ? <Sun size={14} aria-hidden /> : <Moon size={14} aria-hidden />}{' '}
+          <span className="text-capitalize">{mode}</span>
+        </Button>
+      </div>
+      <Card className="sm-card sm-auth-card-new sm-form-enter p-4 position-relative">
+        <div className="sm-auth-card-glow" aria-hidden />
+        <h1 className="sm-page-title sm-fade-up" style={{ fontSize: 27 }}>{title}</h1>
+        <p className="sm-page-sub mb-3 sm-fade-up" style={{ animationDelay: '0.08s' }}>{subtitle}</p>
+        <div className="sm-fade-up" style={{ animationDelay: '0.14s' }}>{children}</div>
+        <div className="mt-3 text-center small sm-fade-up" style={{ animationDelay: '0.2s' }}>{footer}</div>
+      </Card>
+      <div className="d-flex gap-4 mt-3 small position-relative sm-fade-up" style={{ animationDelay: '0.26s', color: 'var(--sm-text-2)' }}>
+        <span className="d-inline-flex align-items-center gap-1"><FolderKanban size={13} aria-hidden /> Kanban boards</span>
+        <span className="d-inline-flex align-items-center gap-1"><KanbanSquare size={13} aria-hidden /> Realtime</span>
+        <span className="d-inline-flex align-items-center gap-1"><Bell size={13} aria-hidden /> Notifications</span>
+      </div>
+      <p className="text-center small mt-2 mb-0 position-relative" style={{ color: 'var(--sm-text-3)' }}>
+        <Zap size={12} aria-hidden /> Protected by JWT + refresh rotation
+      </p>
     </div>
   );
 }
@@ -165,7 +128,7 @@ function PasswordField({
 
 function DemoHint({ onFill }: { onFill: () => void }) {
   return (
-    <Alert variant="info" className="d-flex justify-content-between align-items-center py-2 small">
+    <Alert variant="info" className="d-flex justify-content-between align-items-center py-2 small sm-demo-flash">
       <span>
         <CheckCircle2 size={13} className="me-1" aria-hidden />
         Demo: <code>demo@saas.local</code> / <code>Demo123!</code>
@@ -218,7 +181,7 @@ export function LoginRedesign() {
           <Form.Control.Feedback type="invalid">{errors.email?.message}</Form.Control.Feedback>
         </Form.Group>
         <PasswordField id="login-password" autoComplete="current-password" register={register('password')} error={errors.password?.message} />
-        <Button type="submit" className="w-100" disabled={isSubmitting}>
+        <Button type="submit" className="w-100 sm-btn-shine" disabled={isSubmitting}>
           {isSubmitting ? 'Signing in...' : 'Sign in →'}
         </Button>
       </form>
@@ -278,7 +241,7 @@ export function RegisterRedesign() {
           <Form.Control.Feedback type="invalid">{errors.email?.message}</Form.Control.Feedback>
         </Form.Group>
         <PasswordField id="reg-pass" autoComplete="new-password" register={register('password')} error={errors.password?.message} />
-        <Button type="submit" className="w-100" disabled={isSubmitting}>
+        <Button type="submit" className="w-100 sm-btn-shine" disabled={isSubmitting}>
           {isSubmitting ? 'Creating...' : 'Create account →'}
         </Button>
       </form>
