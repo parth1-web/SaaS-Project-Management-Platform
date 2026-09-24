@@ -1,0 +1,181 @@
+/* SaaS Manager design system — Bootstrap 5 foundation, custom professional theme.
+   Light + dark via [data-bs-theme="dark"]. No Tailwind. */
+
+:root,
+[data-bs-theme="light"] {
+  --sm-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --sm-primary: #4f46e5;
+  --sm-primary-hover: #4338ca;
+  --sm-primary-soft: rgba(79, 70, 229, 0.1);
+  --sm-bg: #f6f7f9;
+  --sm-surface: #ffffff;
+  --sm-surface-2: #f1f2f4;
+  --sm-border: #e4e6eb;
+  --sm-border-strong: #d4d7de;
+  --sm-text: #1a1d23;
+  --sm-text-2: #5b6472;
+  --sm-text-3: #8a94a3;
+  --sm-radius: 10px;
+  --sm-radius-sm: 7px;
+  --sm-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --sm-shadow-hover: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --sm-sidebar-w: 264px;
+  --sm-sidebar-collapsed-w: 76px;
+  --sm-topbar-h: 60px;
+  --bs-primary: #4f46e5;
+  --bs-primary-rgb: 79, 70, 229;
+  --bs-link-color: #4f46e5;
+  --bs-border-radius: 10px;
+}
+
+[data-bs-theme="dark"] {
+  --sm-primary: #818cf8;
+  --sm-primary-hover: #a5b4fc;
+  --sm-primary-soft: rgba(129, 140, 248, 0.14);
+  --sm-bg: #0f1115;
+  --sm-surface: #17191f;
+  --sm-surface-2: #1f222b;
+  --sm-border: #262932;
+  --sm-border-strong: #333743;
+  --sm-text: #e8eaf0;
+  --sm-text-2: #a7b0bf;
+  --sm-text-3: #6d7686;
+  --sm-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sm-shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --bs-primary: #818cf8;
+  --bs-body-bg: #0f1115;
+  --bs-body-color: #e8eaf0;
+  --bs-border-color: #262932;
+}
+
+html, body {
+  font-family: var(--sm-font);
+  font-size: 14.5px;
+  background: var(--sm-bg);
+  color: var(--sm-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { min-height: 100vh; }
+
+/* ---------- App shell ---------- */
+.sm-app { display: flex; min-height: 100vh; background: var(--sm-bg); }
+.sm-sidebar {
+  width: var(--sm-sidebar-w);
+  flex-shrink: 0;
+  position: sticky; top: 0; height: 100vh;
+  background: var(--sm-surface);
+  border-right: 1px solid var(--sm-border);
+  display: flex; flex-direction: column;
+  z-index: 1030;
+  transition: width 0.18s ease, margin 0.18s ease;
+}
+.sm-sidebar.collapsed { width: var(--sm-sidebar-collapsed-w); }
+.sm-sidebar.collapsed .sm-nav-label,
+.sm-sidebar.collapsed .sm-org-meta,
+.sm-sidebar.collapsed .sm-user-meta,
+.sm-sidebar.collapsed .sm-section-title { display: none; }
+.sm-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sm-topbar {
+  height: var(--sm-topbar-h);
+  position: sticky; top: 0; z-index: 1020;
+  background: var(--sm-surface);
+  border-bottom: 1px solid var(--sm-border);
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 20px;
+}
+.sm-content { padding: 24px; max-width: 1280px; width: 100%; margin: 0 auto; }
+@media (max-width: 768px) { .sm-content { padding: 16px; } .sm-sidebar { position: fixed; } }
+
+/* ---------- Typography ---------- */
+.sm-page-title { font-size: 29px; font-weight: 700; letter-spacing: -0.02em; margin: 0; color: var(--sm-text); }
+.sm-page-sub { color: var(--sm-text-2); font-size: 14px; margin-top: 4px; }
+.sm-section-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sm-text-3); }
+
+/* ---------- Cards ---------- */
+.sm-card {
+  background: var(--sm-surface);
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius);
+  box-shadow: var(--sm-shadow);
+}
+.sm-card-hover { transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease; }
+.sm-card-hover:hover { box-shadow: var(--sm-shadow-hover); border-color: var(--sm-border-strong); transform: translateY(-1px); }
+.sm-kpi { padding: 16px 18px; }
+.sm-kpi .sm-kpi-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--sm-primary-soft); color: var(--sm-primary);
+}
+.sm-kpi-value { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+.sm-kpi-label { font-size: 13px; color: var(--sm-text-2); }
+.sm-kpi-sub { font-size: 12px; color: var(--sm-text-3); }
+
+/* ---------- Sidebar nav ---------- */
+.sm-nav-link {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 8px;
+  color: var(--sm-text-2); font-weight: 500; font-size: 14px;
+  text-decoration: none; border: 1px solid transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.sm-nav-link:hover { background: var(--sm-surface-2); color: var(--sm-text); }
+.sm-nav-link.active { background: var(--sm-primary-soft); color: var(--sm-primary); border-color: rgba(79,70,229,0.18); }
+[data-bs-theme="dark"] .sm-nav-link.active { border-color: rgba(129,140,248,0.25); }
+
+/* ---------- Kanban ---------- */
+.sm-kanban-scroll { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 12px; }
+.sm-kanban-col {
+  flex: 0 0 290px; min-width: 290px;
+  background: var(--sm-surface-2);
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius);
+  padding: 12px;
+}
+@media (max-width: 576px) { .sm-kanban-col { flex-basis: 82vw; min-width: 82vw; } }
+.sm-task-card {
+  background: var(--sm-surface);
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius-sm);
+  padding: 12px;
+  transition: box-shadow 0.13s ease, border-color 0.13s ease;
+  cursor: pointer;
+}
+.sm-task-card:hover { border-color: var(--sm-border-strong); box-shadow: var(--sm-shadow-hover); }
+
+/* ---------- Timeline ---------- */
+.sm-timeline { position: relative; padding-left: 22px; }
+.sm-timeline::before { content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: var(--sm-border); border-radius: 2px; }
+.sm-timeline-item { position: relative; padding-bottom: 16px; }
+.sm-timeline-dot { position: absolute; left: -21px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--sm-primary); border: 2px solid var(--sm-surface); box-shadow: 0 0 0 2px var(--sm-primary-soft); }
+
+/* ---------- Tables ---------- */
+.sm-table thead th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sm-text-3); font-weight: 600; border-bottom: 1px solid var(--sm-border); background: transparent; }
+.sm-table tbody td { vertical-align: middle; padding: 10px 12px; border-bottom: 1px solid var(--sm-border); }
+.sm-table tbody tr:hover { background: var(--sm-surface-2); }
+
+/* ---------- Forms / buttons ---------- */
+.btn-primary { --bs-btn-bg: var(--sm-primary); --bs-btn-border-color: var(--sm-primary); --bs-btn-hover-bg: var(--sm-primary-hover); --bs-btn-hover-border-color: var(--sm-primary-hover); }
+.form-control, .form-select { border-radius: 8px; font-size: 14px; }
+.form-control:focus, .form-select:focus { border-color: var(--sm-primary); box-shadow: 0 0 0 3px var(--sm-primary-soft); }
+.modal-content { border-radius: 14px; border: 1px solid var(--sm-border); }
+.offcanvas { border-left: 1px solid var(--sm-border); }
+
+/* ---------- Skeletons ---------- */
+.sm-skeleton { border-radius: 8px; background: linear-gradient(90deg, var(--sm-surface-2) 25%, var(--sm-border) 50%, var(--sm-surface-2) 75%); background-size: 200% 100%; animation: sm-shimmer 1.2s infinite; }
+@keyframes sm-shimmer { to { background-position: -200% 0; } }
+
+/* ---------- Avatars ---------- */
+.sm-avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 600; background: var(--sm-primary-soft); color: var(--sm-primary); flex-shrink: 0; }
+.sm-avatar-group > * { margin-left: -8px; border: 2px solid var(--sm-surface); }
+.sm-avatar-group > *:first-child { margin-left: 0; }
+
+/* ---------- Toasts ---------- */
+.sm-toasts { position: fixed; bottom: 20px; right: 20px; z-index: 1080; display: flex; flex-direction: column; gap: 8px; }
+
+/* ---------- Auth ---------- */
+.sm-auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--sm-bg); }
+.sm-auth-card { width: 100%; max-width: 440px; }
+
+/* Focus visibility */
+:focus-visible { outline: 2px solid var(--sm-primary); outline-offset: 2px; }
