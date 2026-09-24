@@ -1,130 +1,206 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Row, Col, Card, Table, Button, Form, Badge, Modal, Alert } from 'react-bootstrap';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link, useParams } from 'react-router-dom';
+import { Alert, Button, Card, Col, Form, Modal, Row, Tab, Table, Tabs } from 'react-bootstrap';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Building2, Trash2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { organizationApi } from '../api/organizationApi';
-import { LoadingSpinner, ErrorAlert } from '../components/Feedback';
+import { projectApi } from '../api/projectApi';
+import { RoleBadge } from '../components/ui/Badges';
+import { Avatar } from '../components/ui/Avatar';
+import ActivityTimeline from '../components/ui/ActivityTimeline';
+import ConfirmModal from '../components/ui/ConfirmModal';
+import PageHeader from '../components/ui/PageHeader';
+import { ErrorState, LoadingState } from '../components/ui/States';
+import { useToastStore } from '../store/toastStore';
+
+const memberSchema = z.object({
+  email: z.string().email('Invalid email'),
+  role: z.string(),
+});
 
 export default function OrganizationDetails() {
   const { id = '' } = useParams();
   const qc = useQueryClient();
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('Member');
+  const { push } = useToastStore();
+  const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [removeId, setRemoveId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
-  const [showEdit, setShowEdit] = useState(false);
-  const [error, setError] = useState('');
 
-  const orgQuery = useQuery({ queryKey: ['org', id], queryFn: () => organizationApi.get(id) });
-  const membersQuery = useQuery({ queryKey: ['org-members', id], queryFn: () => organizationApi.members(id) });
-  const activityQuery = useQuery({ queryKey: ['org-activity', id], queryFn: () => organizationApi.activity(id, 1, 10) });
+  const orgQ = useQuery({ queryKey: ['org', id], queryFn: () => organizationApi.get(id) });
+  const membersQ = useQuery({ queryKey: ['org-members', id], queryFn: () => organizationApi.members(id) });
+  const activityQ = useQuery({ queryKey: ['org-activity', id], queryFn: () => organizationApi.activity(id, 1, 20) });
+  const projectsQ = useQuery({ queryKey: ['org-projects', id], queryFn: () => projectApi.list(id, 1, 20) });
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<z.infer<typeof memberSchema>>({
+    resolver: zodResolver(memberSchema),
+    defaultValues: { email: '', role: 'Member' },
+  });
 
   const addMut = useMutation({
-    mutationFn: () => organizationApi.addMember(id, { email, role }),
+    mutationFn: (v: z.infer<typeof memberSchema>) => organizationApi.addMember(id, v),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['org-members', id] });
-      setEmail('');
-      setError('');
+      setShowAdd(false);
+      reset();
+      push('Member added successfully.');
     },
     onError: (e: unknown) => {
-      const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed';
-      setError(msg);
+      const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not add member.';
+      push(msg, 'danger');
     },
   });
-
   const roleMut = useMutation({
-    mutationFn: ({ userId, newRole }: { userId: string; newRole: string }) =>
-      organizationApi.updateRole(id, userId, newRole),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['org-members', id] }),
+    mutationFn: ({ userId, role }: { userId: string; role: string }) => organizationApi.updateRole(id, userId, role),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['org-members', id] });
+      push('Role updated.');
+    },
   });
-
   const removeMut = useMutation({
     mutationFn: (userId: string) => organizationApi.removeMember(id, userId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['org-members', id] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['org-members', id] });
+      setRemoveId(null);
+      push('Member removed successfully.');
+    },
   });
-
   const updateMut = useMutation({
     mutationFn: () => organizationApi.update(id, { name: editName, description: editDesc }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['org', id] });
       setShowEdit(false);
+      push('Organization updated.');
     },
   });
 
-  if (orgQuery.isLoading) return <LoadingSpinner />;
-  if (orgQuery.isError || !orgQuery.data) return <ErrorAlert message="Failed to load organization" onRetry={() => orgQuery.refetch()} />;
-
-  const org = orgQuery.data;
+  if (orgQ.isLoading) return <LoadingState text="Loading organization..." />;
+  if (orgQ.isError || !orgQ.data) return <ErrorState message="We couldn't load this organization." onRetry={() => orgQ.refetch()} />;
+  const org = orgQ.data;
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h3>{org.name} <Badge bg="info">{org.userRole}</Badge></h3>
-        <Button variant="outline-secondary" size="sm" onClick={() => { setEditName(org.name); setEditDesc(org.description ?? ''); setShowEdit(true); }}>
-          Edit
-        </Button>
-      </div>
-      <p className="text-muted">{org.description}</p>
-      <Row className="g-3">
-        <Col lg={7}>
-          <Card className="shadow-sm mb-3">
+      <Link to="/organizations" className="small text-muted text-decoration-none d-inline-flex align-items-center gap-1 mb-2">
+        <ArrowLeft size={13} aria-hidden /> Organizations
+      </Link>
+      <PageHeader
+        title={org.name}
+        subtitle={org.description || `${org.memberCount} members • ${org.projectCount} projects`}
+        actions={
+          <>
+            <RoleBadge role={org.userRole} />
+            <Button size="sm" variant="light" className="border" onClick={() => { setEditName(org.name); setEditDesc(org.description ?? ''); setShowEdit(true); }}>
+              Edit
+            </Button>
+            <Button size="sm" onClick={() => setShowAdd(true)}>Add Member</Button>
+          </>
+        }
+      />
+
+      <Tabs defaultActiveKey="overview" className="mb-3" aria-label="Organization sections">
+        <Tab eventKey="overview" title="Overview">
+          <Row className="g-3 mt-1">
+            <Col xs={12} sm={4}>
+              <Card className="sm-card text-center p-3"><div className="fw-bold fs-4">{org.projectCount}</div><div className="small text-muted">Projects</div></Card>
+            </Col>
+            <Col xs={12} sm={4}>
+              <Card className="sm-card text-center p-3"><div className="fw-bold fs-4">{org.memberCount}</div><div className="small text-muted">Members</div></Card>
+            </Col>
+            <Col xs={12} sm={4}>
+              <Card className="sm-card text-center p-3"><div className="fw-bold fs-6">{new Date(org.createdAt).toLocaleDateString()}</div><div className="small text-muted">Created</div></Card>
+            </Col>
+          </Row>
+          <Card className="sm-card mt-3">
             <Card.Body>
-              <Card.Title>Members</Card.Title>
-              {error && <Alert variant="danger">{error}</Alert>}
-              <div className="d-flex gap-2 mb-3">
-                <Form.Control placeholder="member@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-                <Form.Select value={role} onChange={(e) => setRole(e.target.value)} style={{ maxWidth: 140 }}>
-                  <option>Member</option>
-                  <option>Manager</option>
-                  <option>Admin</option>
-                  <option>Owner</option>
-                </Form.Select>
-                <Button onClick={() => addMut.mutate()} disabled={!email || addMut.isPending}>Add</Button>
+              <strong>Recent activity</strong>
+              <div className="mt-3"><ActivityTimeline items={activityQ.data?.items ?? []} /></div>
+            </Card.Body>
+          </Card>
+        </Tab>
+        <Tab eventKey="members" title={`Members (${membersQ.data?.length ?? 0})`}>
+          <Card className="sm-card mt-3">
+            <Card.Body className="p-0">
+              <div className="table-responsive">
+                <Table hover className="sm-table mb-0">
+                  <thead><tr><th>Member</th><th>Email</th><th>Role</th><th>Joined</th><th className="text-end">Actions</th></tr></thead>
+                  <tbody>
+                    {(membersQ.data ?? []).map((m) => (
+                      <tr key={m.userId}>
+                        <td>
+                          <span className="d-flex align-items-center gap-2">
+                            <Avatar name={m.fullName} size={30} />
+                            <strong className="small">{m.fullName}</strong>
+                          </span>
+                        </td>
+                        <td className="small text-muted">{m.email}</td>
+                        <td>
+                          <Form.Select size="sm" value={m.role} style={{ maxWidth: 130 }} aria-label={`Role for ${m.fullName}`} onChange={(e) => roleMut.mutate({ userId: m.userId, newRole: e.target.value })}>
+                            <option>Owner</option><option>Admin</option><option>Manager</option><option>Member</option>
+                          </Form.Select>
+                        </td>
+                        <td className="small text-muted">{new Date(m.joinedAt).toLocaleDateString()}</td>
+                        <td className="text-end">
+                          <Button size="sm" variant="outline-danger" onClick={() => setRemoveId(m.userId)} aria-label={`Remove ${m.fullName}`}>
+                            <Trash2 size={13} aria-hidden />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
               </div>
-              <Table responsive hover size="sm">
-                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead>
-                <tbody>
-                  {membersQuery.data?.map((m) => (
-                    <tr key={m.userId}>
-                      <td>{m.fullName}</td>
-                      <td>{m.email}</td>
-                      <td>
-                        <Form.Select
-                          size="sm"
-                          value={m.role}
-                          onChange={(e) => roleMut.mutate({ userId: m.userId, newRole: e.target.value })}
-                          style={{ maxWidth: 130 }}
-                        >
-                          <option>Owner</option>
-                          <option>Admin</option>
-                          <option>Manager</option>
-                          <option>Member</option>
-                        </Form.Select>
-                      </td>
-                      <td><Button variant="outline-danger" size="sm" onClick={() => removeMut.mutate(m.userId)}>Remove</Button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
             </Card.Body>
           </Card>
-        </Col>
-        <Col lg={5}>
-          <Card className="shadow-sm">
+        </Tab>
+        <Tab eventKey="projects" title="Projects">
+          <Card className="sm-card mt-3">
             <Card.Body>
-              <Card.Title>Recent Activity</Card.Title>
-              {activityQuery.data?.items.map((a) => (
-                <div key={a.id} className="border-bottom py-2 small">
-                  <div><strong>{a.userName}</strong> • {a.action}</div>
-                  <div className="text-muted">{a.description}</div>
-                  <div className="text-muted">{new Date(a.createdAt).toLocaleString()}</div>
+              {(projectsQ.data?.items ?? []).map((p) => (
+                <div key={p.id} className="d-flex justify-content-between border-bottom py-2 small">
+                  <span className="fw-semibold">{p.name}</span>
+                  <Link to={`/projects/${p.id}`}>Open</Link>
                 </div>
-              )) ?? <div className="text-muted">No activity</div>}
+              ))}
+              {(projectsQ.data?.items ?? []).length === 0 && <div className="text-muted small">No projects yet.</div>}
             </Card.Body>
           </Card>
-        </Col>
-      </Row>
-      <Modal show={showEdit} onHide={() => setShowEdit(false)}>
+        </Tab>
+        <Tab eventKey="activity" title="Activity">
+          <Card className="sm-card mt-3">
+            <Card.Body><ActivityTimeline items={activityQ.data?.items ?? []} /></Card.Body>
+          </Card>
+        </Tab>
+      </Tabs>
+
+      <Modal show={showAdd} onHide={() => setShowAdd(false)} centered aria-label="Add member">
+        <Modal.Header closeButton><Modal.Title>Add Member</Modal.Title></Modal.Header>
+        <form onSubmit={handleSubmit((v) => addMut.mutate(v))} noValidate>
+          <Modal.Body>
+            <Alert variant="info" className="small">User must already have an account. Use their login email.</Alert>
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control {...register('email')} isInvalid={!!errors.email} placeholder="member@email.com" />
+              <Form.Control.Feedback type="invalid">{errors.email?.message}</Form.Control.Feedback>
+            </Form.Group>
+            <Form.Group>
+              <Form.Label>Role</Form.Label>
+              <Form.Select {...register('role')}>
+                <option>Member</option><option>Manager</option><option>Admin</option><option>Owner</option>
+              </Form.Select>
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowAdd(false)}>Cancel</Button>
+            <Button type="submit" disabled={addMut.isPending}>{addMut.isPending ? 'Adding...' : 'Add Member'}</Button>
+          </Modal.Footer>
+        </form>
+      </Modal>
+
+      <Modal show={showEdit} onHide={() => setShowEdit(false)} centered aria-label="Edit organization">
         <Modal.Header closeButton><Modal.Title>Edit Organization</Modal.Title></Modal.Header>
         <Modal.Body>
           <Form.Group className="mb-3"><Form.Label>Name</Form.Label><Form.Control value={editName} onChange={(e) => setEditName(e.target.value)} /></Form.Group>
@@ -132,9 +208,22 @@ export default function OrganizationDetails() {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowEdit(false)}>Cancel</Button>
-          <Button onClick={() => updateMut.mutate()}>Save</Button>
+          <Button onClick={() => updateMut.mutate()} disabled={updateMut.isPending}>Save</Button>
         </Modal.Footer>
       </Modal>
+
+      <ConfirmModal
+        show={!!removeId}
+        title="Remove member?"
+        body="This member will lose access to this organization."
+        confirmLabel="Remove"
+        onCancel={() => setRemoveId(null)}
+        onConfirm={() => removeId && removeMut.mutate(removeId)}
+        busy={removeMut.isPending}
+      />
+      <div className="visually-hidden" aria-hidden>
+        <Building2 size={1} />
+      </div>
     </>
   );
 }
