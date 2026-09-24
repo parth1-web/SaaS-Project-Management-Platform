@@ -91,7 +91,30 @@ npm run build
 - DB: Neon / Supabase / Railway / Azure PostgreSQL; Redis: Upstash / Redis Cloud / Azure Cache
 
 ## Screenshots
-Add UI screenshots here (dashboard, board, orgs).
+
+### Dashboard — command center with KPIs, charts and activity
+![Dashboard](docs/screenshots/dashboard.png)
+
+### My Tasks — all assignments across projects
+![My Tasks](docs/screenshots/my-tasks.png)
+
+### Projects — grid view with progress and deadlines
+![Projects](docs/screenshots/projects.png)
+
+### Organizations — workspaces with roles and counts
+![Organizations](docs/screenshots/organizations.png)
+
+### Notifications — realtime inbox with read/unread
+![Notifications](docs/screenshots/notifications.png)
+
+### Activity — organization audit timeline
+![Activity](docs/screenshots/activity.png)
+
+### Profile — account and session info
+![Profile](docs/screenshots/profile.png)
+
+### Settings — appearance (light/dark/system) and preferences
+![Settings](docs/screenshots/settings.png)
 
 ## Future
 Sprints, labels, drag-drop, calendar, time tracking, email invites, dark mode, billing, AI summaries.
