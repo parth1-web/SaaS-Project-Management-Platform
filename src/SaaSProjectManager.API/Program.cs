@@ -24,6 +24,10 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Host.UseSerilog();
 
+// Support Render's PORT environment variable
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // Services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -95,15 +99,40 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
 
-// CORS - configure via env for production, permissive for dev
-var frontendUrl = builder.Configuration["Frontend:Url"] ?? "http://localhost:5173";
+// CORS - support multiple frontend URLs including Render domains
+var frontendUrls = new List<string>
+{
+    builder.Configuration["Frontend:Url"] ?? "http://localhost:5173",
+    "http://localhost:5173",
+    "http://localhost:3000"
+};
+
+// Add Render frontend URL if configured
+var renderFrontendUrl = builder.Configuration["Render:FrontendUrl"];
+if (!string.IsNullOrEmpty(renderFrontendUrl))
+    frontendUrls.Add(renderFrontendUrl);
+
+// Add common Render domains for preview environments
+frontendUrls.AddRange(new[]
+{
+    "https://*.onrender.com",
+    "https://*.render.com"
+});
+
 builder.Services.AddCors(o =>
 {
     o.AddPolicy("frontend", p => p
-        .WithOrigins(frontendUrl, "http://localhost:5173", "http://localhost:3000")
+        .WithOrigins(frontendUrls.ToArray())
         .AllowAnyHeader()
         .AllowAnyMethod()
-        .AllowCredentials());
+        .AllowCredentials()
+        .SetIsOriginAllowed(origin =>
+        {
+            // Allow all Render preview URLs
+            if (origin.EndsWith(".onrender.com") || origin.EndsWith(".render.com"))
+                return true;
+            return frontendUrls.Contains(origin);
+        }));
 });
 
 // Rate limiting (simple)

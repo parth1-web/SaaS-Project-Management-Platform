@@ -1,0 +1,59 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Env / secrets
+.env
+.env.*.local
+appsettings.json
+appsettings.*.json
+!**/appsettings.Example.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# OneDrive lock files
+~$*
+
+# Misc
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+*.md
+!**/appsettings.Example.json
+
+# Tests
+tests/
+
+# Frontend (not needed for API build)
+frontend/
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# CI/CD
+.github/
