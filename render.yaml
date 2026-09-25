@@ -1,6 +1,8 @@
 # Render Infrastructure as Code for SaaS Project Management Platform
-# Deploy with: render deploy --config render.yaml
-# Or connect repo in Render dashboard and it will auto-detect this file
+# Dashboard → New → Blueprint → select this repo → Apply.
+# NOTE: service names must be unique in your Render account. If
+# saas-pm-api / saas-pm-web are taken, rename them below AND update the
+# two hardcoded https://*.onrender.com URLs to match.
 
 services:
   # Backend API - Free Web Service (spins down after 15 min inactivity)
@@ -21,7 +23,7 @@ services:
           name: saas-pm-db
           property: connectionString
       - key: Jwt__Secret
-        sync: false  # Set manually in Render dashboard
+        sync: false  # Set manually in Render dashboard: openssl rand -base64 64
       - key: Jwt__Issuer
         value: SaaSProjectManager
       - key: Jwt__Audience
@@ -29,56 +31,40 @@ services:
       - key: Jwt__AccessTokenMinutes
         value: "60"
       - key: Frontend__Url
-        fromService:
-          name: saas-pm-web
-          type: static
-          property: hostport
+        value: https://saas-pm-web.onrender.com
       - key: Render__FrontendUrl
-        fromService:
-          name: saas-pm-web
-          type: static
-          property: hostport
+        value: https://saas-pm-web.onrender.com
       - key: Redis__Connection
-        fromService:
-          name: saas-pm-redis
-          type: redis
-          property: connectionString
+        sync: false  # Paste the INTERNAL Redis URL from the saas-pm-redis dashboard
       - key: ConnectionStrings__Redis
-        fromService:
-          name: saas-pm-redis
-          type: redis
-          property: connectionString
+        sync: false  # Same value as Redis__Connection
 
-  # Frontend - Free Static Site
-  - type: static
+  # Frontend - Free Static Site (Vite needs the full API URL at build time)
+  - type: web
     name: saas-pm-web
+    env: static
     buildCommand: npm ci && npm run build
-    publishPath: ./dist
+    staticPublishPath: ./dist
     rootDir: frontend/saas-project-manager-web
-    pullRequestPreviewsEnabled: true
     envVars:
       - key: VITE_API_URL
-        fromService:
-          name: saas-pm-api
-          type: web
-          property: hostport
+        value: https://saas-pm-api.onrender.com
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
 
-  # Database - Free PostgreSQL (90 days free, then $7/mo)
-  - type: pserv
-    name: saas-pm-db
-    plan: free
-    region: oregon
-    databaseName: saas_pm
-    user: saas_user
-    ipAllowList: []  # Allow all for Render services
-
-  # Redis - Free Redis
+  # Redis - Free Key Value instance
   - type: redis
     name: saas-pm-redis
     plan: free
     region: oregon
     maxmemoryPolicy: allkeys-lru
+
+databases:
+  # PostgreSQL - Free for 90 days, then $7/mo (or migrate to Neon/Supabase free tier)
+  - name: saas-pm-db
+    databaseName: saas_pm
+    user: saas_pm_user
+    plan: free
+    region: oregon
