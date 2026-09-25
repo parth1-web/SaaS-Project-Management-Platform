@@ -25,6 +25,13 @@ export const dashboardApi = {
   },
 };
 
+export const demoApi = {
+  seed: async () => {
+    const res = await axiosClient.post<{ organizationId: string; seeded: boolean }>('/api/demo/seed');
+    return res.data;
+  },
+};
+
 export const attachmentApi = {
   list: async (taskId: string) => {
     const res = await axiosClient.get<Attachment[]>(`/api/tasks/${taskId}/attachments`);

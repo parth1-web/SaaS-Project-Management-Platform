@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<IActivityLogService, ActivityLogService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IAttachmentService, AttachmentService>();
+        services.AddScoped<IDemoService, DemoService>();
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         return services;
     }

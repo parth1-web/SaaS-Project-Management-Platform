@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { Badge, Card, Col, ProgressBar, Row, Table } from 'react-bootstrap';
-import { useQuery } from '@tanstack/react-query';
+import { Badge, Button, Card, Col, ProgressBar, Row, Table } from 'react-bootstrap';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Bar,
   BarChart,
@@ -13,9 +13,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { ArrowRight, CalendarClock, CheckCircle2, FolderKanban, ListTodo, Sparkles, TriangleAlert } from 'lucide-react';
+import { ArrowRight, CalendarClock, CheckCircle2, FolderKanban, ListTodo, Sparkles, TriangleAlert, WandSparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { dashboardApi } from '../api/miscApi';
+import { dashboardApi, demoApi } from '../api/miscApi';
 import { projectApi } from '../api/projectApi';
 import { taskApi } from '../api/taskApi';
 import { useAuthStore } from '../store/authStore';
@@ -28,6 +28,7 @@ import ActivityTimeline from '../components/ui/ActivityTimeline';
 import { PriorityBadge, StatusBadge } from '../components/ui/Badges';
 import { Avatar } from '../components/ui/Avatar';
 import { organizationApi } from '../api/organizationApi';
+import { useToastStore } from '../store/toastStore';
 
 const BAR_COLORS = ['#2563eb', '#0ea5e9', '#38bdf8', '#1e40af'];
 const PIE_COLORS = ['#2563eb', '#0ea5e9', '#f59e0b', '#10b981'];
@@ -53,8 +54,10 @@ function duePill(due?: string): { text: string; cls: string } {
 
 export default function Dashboard() {
   const { user } = useAuthStore();
-  const { selectedOrgId } = useOrgStore();
+  const { selectedOrgId, setSelectedOrgId } = useOrgStore();
   const { mode } = useThemeStore();
+  const qc = useQueryClient();
+  const { push } = useToastStore();
   const dark =
     mode === 'dark' ||
     (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -86,8 +89,22 @@ export default function Dashboard() {
     enabled: !!selectedOrgId,
   });
 
-  const upcoming = useMemo(() => {
-    const items = upcomingQ.data?.items ?? [];
+  const seedMut = useMutation({
+    mutationFn: () => demoApi.seed(),
+    onSuccess: (res) => {
+      setSelectedOrgId(res.organizationId);
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['orgs'] });
+      qc.invalidateQueries({ queryKey: ['orgs-switcher'] });
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+      qc.invalidateQueries({ queryKey: ['unread'] });
+      push(res.seeded ? 'Demo workspace loaded.' : 'Demo workspace already exists.');
+    },
+    onError: () => push('Could not load demo data.', 'danger'),
+  });
+
+  const upcoming = useMemo(() => {    const items = upcomingQ.data?.items ?? [];
     return [...items]
       .filter((t) => t.status !== 3)
       .sort((a, b) => {
@@ -140,7 +157,18 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <PageHeader title="Command center" subtitle="Live metrics across your workspace." />
+      <PageHeader
+        title="Command center"
+        subtitle="Live metrics across your workspace."
+        actions={
+          d.totalProjects === 0 && d.totalTasks === 0 ? (
+            <Button onClick={() => seedMut.mutate()} disabled={seedMut.isPending}>
+              <WandSparkles size={14} className="me-1" aria-hidden />
+              {seedMut.isPending ? 'Loading demo data...' : 'Load demo data'}
+            </Button>
+          ) : undefined
+        }
+      />
 
       <Row className="g-3 mb-3">
         <Col xs={12} sm={6} xl={3}>
