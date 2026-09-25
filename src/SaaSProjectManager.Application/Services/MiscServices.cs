@@ -12,12 +12,14 @@ public class CommentService : ICommentService
     private readonly IApplicationDbContext _db;
     private readonly IActivityLogService _activity;
     private readonly INotificationService _notifications;
+    private readonly ICacheService _cache;
 
-    public CommentService(IApplicationDbContext db, IActivityLogService activity, INotificationService notifications)
+    public CommentService(IApplicationDbContext db, IActivityLogService activity, INotificationService notifications, ICacheService cache)
     {
         _db = db;
         _activity = activity;
         _notifications = notifications;
+        _cache = cache;
     }
 
     private async Task EnsureTaskAccess(Guid userId, Guid taskId, CancellationToken ct)
@@ -40,6 +42,7 @@ public class CommentService : ICommentService
         await _db.SaveChangesAsync(ct);
         var user = await _db.Users.FirstAsync(u => u.Id == userId, ct);
         await _activity.LogAsync(project.OrganizationId, userId, "CommentAdded", "Comment", comment.Id, $"Comment on {task.Title}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, project.OrganizationId, ct: ct);
         if (task.AssignedTo.HasValue && task.AssignedTo != userId)
             await _notifications.CreateAsync(task.AssignedTo.Value, Domain.Enums.NotificationType.CommentAdded, "New comment", $"{user.FullName} commented on '{task.Title}'", task.Id, ct);
         return new CommentDto(comment.Id, comment.TaskId, comment.UserId, user.FullName, comment.Content, comment.CreatedAt, comment.UpdatedAt);
@@ -84,6 +87,13 @@ public class CommentService : ICommentService
         }
         _db.Comments.Remove(c);
         await _db.SaveChangesAsync(ct);
+        var parentTask = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == c.TaskId, ct);
+        if (parentTask != null)
+        {
+            var parentProject = await _db.Projects.FirstOrDefaultAsync(p => p.Id == parentTask.ProjectId, ct);
+            if (parentProject != null)
+                await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, parentProject.OrganizationId, ct: ct);
+        }
     }
 }
 

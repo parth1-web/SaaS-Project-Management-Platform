@@ -13,12 +13,14 @@ public class TaskService : ITaskService
     private readonly IApplicationDbContext _db;
     private readonly IActivityLogService _activity;
     private readonly INotificationService _notifications;
+    private readonly ICacheService _cache;
 
-    public TaskService(IApplicationDbContext db, IActivityLogService activity, INotificationService notifications)
+    public TaskService(IApplicationDbContext db, IActivityLogService activity, INotificationService notifications, ICacheService cache)
     {
         _db = db;
         _activity = activity;
         _notifications = notifications;
+        _cache = cache;
     }
 
     private async Task<Project> GetProjectOrThrow(Guid projectId, CancellationToken ct)
@@ -76,6 +78,7 @@ public class TaskService : ITaskService
         _db.Tasks.Add(task);
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(project.OrganizationId, userId, "TaskCreated", "Task", task.Id, $"Created task {task.Title}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, project.OrganizationId, ct: ct);
         if (task.AssignedTo.HasValue && task.AssignedTo != userId)
             await _notifications.CreateAsync(task.AssignedTo.Value, Domain.Enums.NotificationType.TaskAssigned, "Task assigned", $"You were assigned to '{task.Title}'", task.Id, ct);
         return await MapAsync(task, ct);
@@ -156,6 +159,7 @@ public class TaskService : ITaskService
         t.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(project.OrganizationId, userId, "TaskUpdated", "Task", t.Id, $"Updated task {t.Title}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, project.OrganizationId, ct: ct);
         if (t.AssignedTo.HasValue && t.AssignedTo != prevAssignee && t.AssignedTo != userId)
             await _notifications.CreateAsync(t.AssignedTo.Value, Domain.Enums.NotificationType.TaskAssigned, "Task assigned", $"You were assigned to '{t.Title}'", t.Id, ct);
         return await MapAsync(t, ct);
@@ -170,6 +174,7 @@ public class TaskService : ITaskService
         _db.Tasks.Remove(t);
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(project.OrganizationId, userId, "TaskDeleted", "Task", taskId, $"Deleted task {t.Title}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, project.OrganizationId, ct: ct);
     }
 
     public async Task<TaskDto> UpdateStatusAsync(Guid userId, Guid taskId, UpdateTaskStatusRequest request, CancellationToken ct = default)
@@ -182,6 +187,7 @@ public class TaskService : ITaskService
         t.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(project.OrganizationId, userId, "TaskStatusChanged", "Task", t.Id, $"Status -> {request.Status}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, project.OrganizationId, ct: ct);
         if (t.AssignedTo.HasValue && t.AssignedTo != userId)
             await _notifications.CreateAsync(t.AssignedTo.Value, Domain.Enums.NotificationType.TaskStatusChanged, "Task status changed", $"'{t.Title}' -> {request.Status}", t.Id, ct);
         return await MapAsync(t, ct);
@@ -202,6 +208,7 @@ public class TaskService : ITaskService
         t.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(project.OrganizationId, userId, "TaskAssigned", "Task", t.Id, "Task assignment changed", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, project.OrganizationId, ct: ct);
         if (t.AssignedTo.HasValue && t.AssignedTo != userId)
             await _notifications.CreateAsync(t.AssignedTo.Value, Domain.Enums.NotificationType.TaskAssigned, "Task assigned", $"You were assigned to '{t.Title}'", t.Id, ct);
         return await MapAsync(t, ct);

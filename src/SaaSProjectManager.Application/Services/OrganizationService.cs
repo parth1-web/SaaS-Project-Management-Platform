@@ -12,11 +12,13 @@ public class OrganizationService : IOrganizationService
 {
     private readonly IApplicationDbContext _db;
     private readonly IActivityLogService _activity;
+    private readonly ICacheService _cache;
 
-    public OrganizationService(IApplicationDbContext db, IActivityLogService activity)
+    public OrganizationService(IApplicationDbContext db, IActivityLogService activity, ICacheService cache)
     {
         _db = db;
         _activity = activity;
+        _cache = cache;
     }
 
     private static string ToSlug(string name)
@@ -62,6 +64,7 @@ public class OrganizationService : IOrganizationService
         });
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(org.Id, userId, "OrganizationCreated", "Organization", org.Id, $"Created organization {org.Name}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, org.Id, ct: ct);
         return await GetByIdAsync(userId, org.Id, ct);
     }
 
@@ -110,6 +113,7 @@ public class OrganizationService : IOrganizationService
         org.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(id, userId, "OrganizationUpdated", "Organization", id, $"Updated organization {org.Name}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, id, ct: ct);
         return await GetByIdAsync(userId, id, ct);
     }
 
@@ -120,8 +124,11 @@ public class OrganizationService : IOrganizationService
         if (m.Role != OrganizationRole.Owner) throw new ForbiddenException("Only Owner can delete organization.");
         var org = await _db.Organizations.FirstOrDefaultAsync(o => o.Id == id, ct);
         if (org == null) throw new NotFoundException("Organization not found.");
+        // Capture members BEFORE cascade delete removes their rows.
+        var memberIds = await _db.OrganizationMembers.Where(x => x.OrganizationId == id).Select(x => x.UserId).ToListAsync(ct);
         _db.Organizations.Remove(org);
         await _db.SaveChangesAsync(ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, id, memberIds, ct);
     }
 
     public async Task<List<OrganizationMemberDto>> GetMembersAsync(Guid userId, Guid orgId, CancellationToken ct = default)
@@ -154,6 +161,7 @@ public class OrganizationService : IOrganizationService
         _db.OrganizationMembers.Add(member);
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(orgId, userId, "MemberAdded", "OrganizationMember", user.Id, $"Added {user.Email} as {role}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, orgId, ct: ct);
         return new OrganizationMemberDto(user.Id, user.Email, user.FullName, role, member.JoinedAt);
     }
 
@@ -171,6 +179,7 @@ public class OrganizationService : IOrganizationService
         member.Role = role;
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(orgId, userId, "MemberRoleChanged", "OrganizationMember", memberUserId, $"Changed role to {role}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, orgId, ct: ct);
         return new OrganizationMemberDto(member.UserId, member.User.Email, member.User.FullName, member.Role, member.JoinedAt);
     }
 
@@ -187,5 +196,6 @@ public class OrganizationService : IOrganizationService
         _db.OrganizationMembers.Remove(member);
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(orgId, userId, "MemberRemoved", "OrganizationMember", memberUserId, "Removed member", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, orgId, new[] { memberUserId }, ct);
     }
 }

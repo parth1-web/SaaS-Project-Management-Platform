@@ -162,7 +162,7 @@ public class OrganizationServiceTests
     {
         var (db, userId) = await SetupUserAsync();
         var activity = new ActivityLogService(db);
-        var svc = new OrganizationService(db, activity);
+        var svc = new OrganizationService(db, activity, TestHelper.Cache());
         var org = await svc.CreateAsync(userId, new CreateOrganizationRequest("Acme", "Test org"));
         org.Name.Should().Be("Acme");
         org.UserRole.Should().Be("Owner");
@@ -174,7 +174,7 @@ public class OrganizationServiceTests
     {
         var (db, userId) = await SetupUserAsync();
         var activity = new ActivityLogService(db);
-        var svc = new OrganizationService(db, activity);
+        var svc = new OrganizationService(db, activity, TestHelper.Cache());
         var org = await svc.CreateAsync(userId, new CreateOrganizationRequest("Acme", null));
 
         using var db2 = TestHelper.CreateInMemoryDb();
@@ -198,9 +198,9 @@ public class TaskServiceTests
         var reg = await auth.RegisterAsync(new RegisterRequest("P", "M", $"pm{Guid.NewGuid():N}@ex.com", "Secret123!"));
         var activity = new ActivityLogService(db);
         var notifs = new NotificationService(db);
-        var orgSvc = new OrganizationService(db, activity);
-        var projSvc = new ProjectService(db, activity);
-        var taskSvc = new Application.Services.TaskService(db, activity, notifs);
+        var orgSvc = new OrganizationService(db, activity, TestHelper.Cache());
+        var projSvc = new ProjectService(db, activity, TestHelper.Cache());
+        var taskSvc = new Application.Services.TaskService(db, activity, notifs, TestHelper.Cache());
 
         var org = await orgSvc.CreateAsync(reg.UserId, new CreateOrganizationRequest("Org1", null));
         var proj = await projSvc.CreateAsync(reg.UserId, new CreateProjectRequest(org.Id, "Proj1", null, Domain.Enums.ProjectStatus.Active, null, null));

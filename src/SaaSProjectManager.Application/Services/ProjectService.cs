@@ -12,11 +12,13 @@ public class ProjectService : IProjectService
 {
     private readonly IApplicationDbContext _db;
     private readonly IActivityLogService _activity;
+    private readonly ICacheService _cache;
 
-    public ProjectService(IApplicationDbContext db, IActivityLogService activity)
+    public ProjectService(IApplicationDbContext db, IActivityLogService activity, ICacheService cache)
     {
         _db = db;
         _activity = activity;
+        _cache = cache;
     }
 
     private async Task<OrganizationMember?> GetOrgMembership(Guid userId, Guid orgId, CancellationToken ct)
@@ -70,6 +72,7 @@ public class ProjectService : IProjectService
         _db.ProjectMembers.Add(new ProjectMember { ProjectId = project.Id, UserId = userId });
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(project.OrganizationId, userId, "ProjectCreated", "Project", project.Id, $"Created project {project.Name}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, project.OrganizationId, ct: ct);
         return await MapAsync(project, ct);
     }
 
@@ -112,6 +115,7 @@ public class ProjectService : IProjectService
         p.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(p.OrganizationId, userId, "ProjectUpdated", "Project", p.Id, $"Updated project {p.Name}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, p.OrganizationId, ct: ct);
         return await MapAsync(p, ct);
     }
 
@@ -125,6 +129,7 @@ public class ProjectService : IProjectService
         _db.Projects.Remove(p);
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(p.OrganizationId, userId, "ProjectDeleted", "Project", p.Id, $"Deleted project {p.Name}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, p.OrganizationId, ct: ct);
     }
 
     public async Task<List<ProjectMemberDto>> GetMembersAsync(Guid userId, Guid projectId, CancellationToken ct = default)
@@ -156,6 +161,7 @@ public class ProjectService : IProjectService
         _db.ProjectMembers.Add(pm);
         await _db.SaveChangesAsync(ct);
         await _activity.LogAsync(p.OrganizationId, userId, "ProjectMemberAdded", "Project", projectId, $"Added {user.Email} to project {p.Name}", ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, p.OrganizationId, new[] { user.Id }, ct);
         return new ProjectMemberDto(user.Id, user.Email, user.FullName, pm.JoinedAt);
     }
 
@@ -170,5 +176,6 @@ public class ProjectService : IProjectService
         if (pm == null) throw new NotFoundException("Project member not found.");
         _db.ProjectMembers.Remove(pm);
         await _db.SaveChangesAsync(ct);
+        await Common.DashboardCache.EvictForOrganizationAsync(_db, _cache, p.OrganizationId, new[] { memberUserId }, ct);
     }
 }
