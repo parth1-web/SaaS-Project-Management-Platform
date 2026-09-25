@@ -23,13 +23,19 @@ public static class DevDataSeeder
     {
         using var scope = services.CreateScope();
         var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
-        if (!env.IsDevelopment()) return;
 
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DevDataSeeder");
 
-        // Ensures database + tables exist even if the user skipped `dotnet ef database update`.
-        await db.Database.MigrateAsync(ct);
+        // Always migrate real databases: production databases start empty (e.g.
+        // fresh Render PostgreSQL), and free tiers have no shell for manual
+        // `dotnet ef` runs. Skipped for non-relational providers (InMemory tests).
+        if (db.Database.IsRelational())
+            await db.Database.MigrateAsync(ct);
+
+        // Demo data is development-only. Never seed the publicly-known demo
+        // credentials into a production database.
+        if (!env.IsDevelopment()) return;
 
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
 
