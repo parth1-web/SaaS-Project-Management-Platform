@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Badge, Button, Card, Col, ProgressBar, Row, Table } from 'react-bootstrap';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -6,13 +6,16 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Pie,
   PieChart,
   ResponsiveContainer,
+  Sector,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
+import type { PieSectorDataItem, TooltipContentProps } from 'recharts';
 import { ArrowRight, CalendarClock, CheckCircle2, FolderKanban, ListTodo, Sparkles, TriangleAlert, WandSparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { dashboardApi, demoApi } from '../api/miscApi';
@@ -20,7 +23,6 @@ import { projectApi } from '../api/projectApi';
 import { taskApi } from '../api/taskApi';
 import { useAuthStore } from '../store/authStore';
 import { useOrgStore } from '../store/orgStore';
-import { useThemeStore } from '../store/themeStore';
 import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 import { CardSkeletonGrid, EmptyState, ErrorState, LoadingState } from '../components/ui/States';
@@ -30,8 +32,44 @@ import { Avatar } from '../components/ui/Avatar';
 import { organizationApi } from '../api/organizationApi';
 import { useToastStore } from '../store/toastStore';
 
-const BAR_COLORS = ['#2563eb', '#0ea5e9', '#38bdf8', '#1e40af'];
-const PIE_COLORS = ['#2563eb', '#0ea5e9', '#f59e0b', '#10b981'];
+type ChartDatum = { status?: string; priority?: string; count?: number };
+
+const STATUS_COLORS: Record<string, string> = {
+  todo: '#64748b',
+  inprogress: '#2563eb',
+  review: '#f59e0b',
+  completed: '#10b981',
+};
+
+const PRIORITY_COLORS: Record<string, string> = {
+  low: '#64748b',
+  medium: '#0ea5e9',
+  high: '#f59e0b',
+  urgent: '#ef4444',
+};
+
+function colorFor(map: Record<string, string>, name: string, index: number): string {
+  return map[name.toLowerCase()] ?? ['#2563eb', '#0ea5e9', '#f59e0b', '#10b981'][index % 4];
+}
+
+function ChartTooltip({ active, payload, total }: TooltipContentProps & { total: number }) {
+  if (!active || !payload?.length) return null;
+  const entry = payload[0];
+  const datum = (entry?.payload ?? {}) as ChartDatum;
+  const label = datum.status ?? datum.priority ?? String(entry?.name ?? '');
+  const value = Number(entry?.value ?? 0);
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  return (
+    <div className="sm-chart-tooltip">
+      <div className="sm-chart-tooltip-label">{label}</div>
+      <div className="sm-chart-tooltip-row">
+        <span>Tasks</span>
+        <b>{value}</b>
+        <span className="sm-chart-legend-pct">{pct}%</span>
+      </div>
+    </div>
+  );
+}
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -55,17 +93,9 @@ function duePill(due?: string): { text: string; cls: string } {
 export default function Dashboard() {
   const { user } = useAuthStore();
   const { selectedOrgId, setSelectedOrgId } = useOrgStore();
-  const { mode } = useThemeStore();
   const qc = useQueryClient();
   const { push } = useToastStore();
-  const dark =
-    mode === 'dark' ||
-    (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const axisTick = dark ? '#a9c1e3' : '#45608a';
-  const gridStroke = dark ? '#1e3a66' : '#d7e3f5';
-  const tooltipStyle = dark
-    ? { backgroundColor: '#0d1c38', border: '1px solid #2c4f89', borderRadius: 8, color: '#e3eefc', fontSize: 12 }
-    : { backgroundColor: '#ffffff', border: '1px solid #d7e3f5', borderRadius: 8, color: '#0f2447', fontSize: 12 };
+  const [hoverPriority, setHoverPriority] = useState<number | null>(null);
 
   const statsQ = useQuery({
     queryKey: ['dashboard', selectedOrgId],
@@ -123,6 +153,24 @@ export default function Dashboard() {
   const completion = d.totalTasks ? Math.round((d.completedTasks / d.totalTasks) * 100) : 0;
   const firstName = user?.firstName || user?.fullName?.split(' ')[0] || 'there';
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+
+  const statusData = d.tasksByStatus;
+  const priorityData = d.tasksByPriority;
+  const statusTotal = statusData.reduce((sum, s) => sum + s.count, 0);
+  const priorityTotal = priorityData.reduce((sum, p) => sum + p.count, 0);
+  const statusMax = statusData.length ? Math.ceil((Math.max(...statusData.map((s) => s.count)) * 1.25) || 1) : 1;
+  const activeSector = (props: PieSectorDataItem) => (
+    <Sector
+      cx={props.cx}
+      cy={props.cy}
+      innerRadius={props.innerRadius}
+      outerRadius={Math.min((props.outerRadius ?? 0) + 7, 88)}
+      startAngle={props.startAngle}
+      endAngle={props.endAngle}
+      cornerRadius={props.cornerRadius}
+      fill={props.fill}
+    />
+  );
 
   return (
     <>
@@ -190,53 +238,122 @@ export default function Dashboard() {
           <Card className="sm-card sm-card-blue h-100">
             <Card.Body>
               <div className="sm-card-head mb-2">
-                <strong>Task Overview</strong>
+                <div>
+                  <strong>Task distribution</strong>
+                  <div className="sm-chart-sub">Live breakdown across your workspace</div>
+                </div>
                 <Badge bg="primary" className="fw-normal">
                   {d.totalTasks} total
                 </Badge>
               </div>
-              <div style={{ height: 250 }} role="img" aria-label="Tasks by status chart">
-                <ResponsiveContainer>
-                  <BarChart data={d.tasksByStatus} margin={{ left: -12, right: 8 }}>
-                    <defs>
-                      <linearGradient id="smBar" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#2563eb" />
-                        <stop offset="100%" stopColor="#0ea5e9" />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="status" tick={{ fontSize: 12, fill: axisTick }} axisLine={false} tickLine={false} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: axisTick }} axisLine={false} tickLine={false} width={32} />
-                    <Tooltip contentStyle={tooltipStyle} />
-                    <Bar dataKey="count" fill="url(#smBar)" radius={[7, 7, 0, 0]} maxBarSize={44}>
-                      {d.tasksByStatus.map((_, i) => (
-                        <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />
+              {statusTotal === 0 ? (
+                <EmptyState title="No task data yet" hint="Create a task to populate the distribution charts." />
+              ) : (
+                <>
+                  <div className="sm-chart-title">Tasks by status</div>
+                  <div className="sm-chart-bar" role="img" aria-label="Tasks by status chart">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={statusData} margin={{ top: 20, right: 10, bottom: 2, left: 0 }} barCategoryGap="30%">
+                        <defs>
+                          {statusData.map((s, i) => (
+                            <linearGradient key={s.status} id={`smBarGrad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={colorFor(STATUS_COLORS, s.status, i)} />
+                              <stop offset="100%" stopColor={colorFor(STATUS_COLORS, s.status, i)} stopOpacity={0.55} />
+                            </linearGradient>
+                          ))}
+                        </defs>
+                        <CartesianGrid stroke="var(--sm-border)" strokeDasharray="4 4" vertical={false} />
+                        <XAxis
+                          dataKey="status"
+                          interval={0}
+                          tick={{ fontSize: 12, fill: 'var(--sm-text-2)' }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          allowDecimals={false}
+                          domain={[0, statusMax]}
+                          tick={{ fontSize: 12, fill: 'var(--sm-text-2)' }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={34}
+                        />
+                        <Tooltip
+                          cursor={{ fill: 'var(--sm-primary-soft)' }}
+                          content={(props) => <ChartTooltip {...props} total={statusTotal} />}
+                        />
+                        <Bar
+                          dataKey="count"
+                          name="Tasks"
+                          radius={[8, 8, 0, 0]}
+                          maxBarSize={46}
+                          background={{ fill: 'var(--sm-surface-2)', radius: 8 }}
+                          animationDuration={800}
+                        >
+                          {statusData.map((s, i) => (
+                            <Cell key={s.status} fill={`url(#smBarGrad-${i})`} />
+                          ))}
+                          <LabelList dataKey="count" position="top" offset={10} fill="var(--sm-text-2)" fontSize={11} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="sm-chart-title mt-1">Tasks by priority</div>
+                  <div className="sm-chart-donut">
+                    <div className="sm-chart-donut-plot" role="img" aria-label="Tasks by priority chart">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={priorityData}
+                            dataKey="count"
+                            nameKey="priority"
+                            innerRadius={48}
+                            outerRadius={76}
+                            paddingAngle={2}
+                            cornerRadius={5}
+                            stroke="none"
+                            animationDuration={800}
+                            activeShape={activeSector}
+                            onMouseOver={(_, index) => setHoverPriority(index)}
+                            onMouseOut={() => setHoverPriority(null)}
+                          >
+                            {priorityData.map((p, i) => (
+                              <Cell
+                                key={p.priority}
+                                fill={colorFor(PRIORITY_COLORS, p.priority, i)}
+                                fillOpacity={hoverPriority === null || hoverPriority === i ? 1 : 0.3}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip content={(props) => <ChartTooltip {...props} total={priorityTotal} />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="sm-chart-center">
+                        <strong>{priorityTotal}</strong>
+                        <span>tasks</span>
+                      </div>
+                    </div>
+                    <ul className="sm-chart-legend">
+                      {priorityData.map((p, i) => (
+                        <li
+                          key={p.priority}
+                          className={`sm-chart-legend-item ${hoverPriority === i ? 'active' : ''}`}
+                          onMouseEnter={() => setHoverPriority(i)}
+                          onMouseLeave={() => setHoverPriority(null)}
+                        >
+                          <span className="sm-chart-dot" style={{ background: colorFor(PRIORITY_COLORS, p.priority, i) }} aria-hidden />
+                          <span className="sm-chart-legend-label">{p.priority}</span>
+                          <span className="sm-chart-legend-value">{p.count}</span>
+                          <span className="sm-chart-legend-pct">
+                            {priorityTotal > 0 ? Math.round((p.count / priorityTotal) * 100) : 0}%
+                          </span>
+                        </li>
                       ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ height: 180 }} className="mt-1" role="img" aria-label="Tasks by priority chart">
-                <ResponsiveContainer>
-                  <PieChart>
-                    <Pie
-                      data={d.tasksByPriority}
-                      dataKey="count"
-                      nameKey="priority"
-                      outerRadius={72}
-                      innerRadius={40}
-                      paddingAngle={3}
-                      label={{ fontSize: 11, fill: axisTick }}
-                      strokeWidth={0}
-                    >
-                      {d.tasksByPriority.map((_, i) => (
-                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={tooltipStyle} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+                    </ul>
+                  </div>
+                </>
+              )}
             </Card.Body>
           </Card>
         </Col>
