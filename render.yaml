@@ -54,12 +54,13 @@ services:
         source: /*
         destination: /index.html
 
-  # Redis - Free Key Value instance
+  # Redis - Free Key Value instance (internal access only)
   - type: redis
     name: saas-pm-redis
     plan: free
     region: oregon
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []  # no public access; API connects over Render's internal network
 
 databases:
   # PostgreSQL - Free for 90 days, then $7/mo (or migrate to Neon/Supabase free tier)
