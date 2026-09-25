@@ -17,8 +17,8 @@ public class CacheService : ICacheService
         try
         {
             var conn = config.GetConnectionString("Redis") ?? config["Redis:Connection"];
-            if (!string.IsNullOrWhiteSpace(conn))
-                _redis = ConnectionMultiplexer.Connect(conn);
+            if (!string.IsNullOrWhiteSpace(conn) && !conn.Equals("pending", StringComparison.OrdinalIgnoreCase))
+                _redis = ConnectionMultiplexer.Connect(NormalizeRedisConnectionString(conn));
         }
         catch
         {
@@ -87,5 +87,28 @@ public class CacheService : ICacheService
             catch { }
         }
         return Task.CompletedTask;
+    }
+
+    internal static string NormalizeRedisConnectionString(string raw)
+    {
+        // Accept redis://[[user:]password@]host[:port][/db] and rediss:// (TLS) URLs
+        // as well as plain "host:port" strings StackExchange.Redis expects.
+        if (raw.StartsWith("redis://", StringComparison.OrdinalIgnoreCase) ||
+            raw.StartsWith("rediss://", StringComparison.OrdinalIgnoreCase))
+        {
+            var ssl = raw.StartsWith("rediss://", StringComparison.OrdinalIgnoreCase);
+            var uri = new Uri(raw);
+            var options = $"{uri.Host}:{(uri.IsDefaultPort ? 6379 : uri.Port)}";
+            var userInfo = uri.UserInfo.Split(':', 2);
+            var password = userInfo.Length > 1 ? userInfo[1] : (userInfo[0].Length > 0 ? userInfo[0] : null);
+            if (!string.IsNullOrEmpty(password))
+                options += $",password={password}";
+            if (ssl) options += ",ssl=True";
+            if (!string.IsNullOrEmpty(uri.AbsolutePath.Trim('/')) && int.TryParse(uri.AbsolutePath.Trim('/'), out var db))
+                options += $",defaultDatabase={db}";
+            options += ",abortConnect=False";
+            return options;
+        }
+        return raw;
     }
 }

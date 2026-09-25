@@ -17,6 +17,10 @@ public static class DependencyInjection
         var conn = config.GetConnectionString("DefaultConnection")
             ?? "Host=localhost;Database=saas_pm;Username=postgres;Password=postgres";
 
+        // Render auto-wires PostgreSQL as a URL (postgres://user:pass@host/db),
+        // but Npgsql needs Host=...;Database=... format. Convert when needed.
+        conn = NormalizePostgresConnectionString(conn);
+
         services.AddDbContext<ApplicationDbContext>(opt =>
         {
             opt.UseNpgsql(conn);
@@ -30,5 +34,26 @@ public static class DependencyInjection
         services.AddHostedService<DeadlineReminderService>();
 
         return services;
+    }
+
+    internal static string NormalizePostgresConnectionString(string raw)
+    {
+        if (raw.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
+            raw.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+        {
+            var uri = new Uri(raw);
+            var userInfo = uri.UserInfo.Split(':', 2);
+            var builder = new Npgsql.NpgsqlConnectionStringBuilder
+            {
+                Host = uri.Host,
+                Port = uri.IsDefaultPort ? 5432 : uri.Port,
+                Database = uri.AbsolutePath.Trim('/'),
+                Username = Uri.UnescapeDataString(userInfo[0]),
+                Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty,
+                SslMode = Npgsql.SslMode.Require,
+            };
+            return builder.ToString();
+        }
+        return raw;
     }
 }
