@@ -2,15 +2,15 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy solution and project files first for better layer caching
-COPY SaaSProjectManager.sln .
+# Copy project files first for better layer caching
+# (API-only restore: tests/ is excluded from the Docker context by .dockerignore)
 COPY src/SaaSProjectManager.API/SaaSProjectManager.API.csproj src/SaaSProjectManager.API/
 COPY src/SaaSProjectManager.Application/SaaSProjectManager.Application.csproj src/SaaSProjectManager.Application/
 COPY src/SaaSProjectManager.Domain/SaaSProjectManager.Domain.csproj src/SaaSProjectManager.Domain/
 COPY src/SaaSProjectManager.Infrastructure/SaaSProjectManager.Infrastructure.csproj src/SaaSProjectManager.Infrastructure/
 
 # Restore dependencies
-RUN dotnet restore SaaSProjectManager.sln
+RUN dotnet restore src/SaaSProjectManager.API/SaaSProjectManager.API.csproj
 
 # Copy source code
 COPY . .
@@ -34,9 +34,8 @@ COPY --from=build --chown=appuser:appgroup /app/publish .
 # Expose port (Render uses PORT env var, default 8080)
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8080/health || exit 1
+# NOTE: no Docker HEALTHCHECK here - the aspnet runtime image has no curl,
+# and Render performs its own health check via healthCheckPath: /health.
 
 # Start the application
 ENTRYPOINT ["dotnet", "SaaSProjectManager.API.dll"]
